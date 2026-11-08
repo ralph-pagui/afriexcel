@@ -1,0 +1,19 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Redirection SPA standard pour React
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# En-têtes critiques pour Microsoft Office Add-in (Excel Online & Desktop)
+# Sans frame-ancestors permissif, Excel bloque le chargement de l'iframe dans le volet !
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS, PUT, DELETE"
+    Access-Control-Allow-Headers = "Content-Type, Authorization, X-Requested-With"
+    Content-Security-Policy = "frame-ancestors 'self' https://*.office.com https://*.officeapps.live.com https://*.microsoft.com https://*.sharepoint.com https://*.office365.com;"

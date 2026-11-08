@@ -1,0 +1,14 @@
+# Cache-Control équilibré pour les fichiers HTML et manifest :
+# Permet une revalidation rapide tout en autorisant l'utilisation du cache hors-ligne
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/manifest.xml
+  Cache-Control: public, max-age=0, must-revalidate
+
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+# Mettre en cache permanent les fichiers statiques versionnés avec hash (JS, CSS, images)
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

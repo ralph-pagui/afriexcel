@@ -1,0 +1,51 @@
+# Dépendances Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Builds frontend
+addin-frontend/dist/
+dist/
+
+# Environnement et clés secrètes
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.venv
+venv/
+ENV/
+
+# Fichiers de tests et scripts de debug locaux
+backend/test_*.py
+backend/debug_*.py
+backend/output/
+*.xlsx
+!tests/*.xlsx
+
+# OS
+.DS_Store
+Thumbs.db
