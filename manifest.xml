@@ -10,11 +10,11 @@
   <DefaultLocale>fr-FR</DefaultLocale>
   <DisplayName DefaultValue="Assistant IA Excel"/>
   <Description DefaultValue="Assistant IA pour Excel : Rapprochement bancaire, SYSCOHADA, Paie locale."/>
-  <IconUrl DefaultValue="https://afriexcel.netlify.app/assets/icon-32.png"/>
-  <HighResolutionIconUrl DefaultValue="https://afriexcel.netlify.app/assets/icon-80.png"/>
-  <SupportUrl DefaultValue="https://afriexcel.netlify.app/"/>
+  <IconUrl DefaultValue="https://afriexcelai.netlify.app/assets/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://afriexcelai.netlify.app/assets/icon-80.png"/>
+  <SupportUrl DefaultValue="https://afriexcelai.netlify.app/"/>
   <AppDomains>
-    <AppDomain>https://afriexcel.netlify.app</AppDomain>
+    <AppDomain>https://afriexcelai.netlify.app</AppDomain>
     <AppDomain>https://appsforoffice.microsoft.com</AppDomain>
     <AppDomain>https://generativelanguage.googleapis.com</AppDomain>
   </AppDomains>
@@ -22,7 +22,7 @@
     <Host Name="Workbook"/>
   </Hosts>
   <DefaultSettings>
-    <SourceLocation DefaultValue="https://afriexcel.netlify.app/index.html"/>
+    <SourceLocation DefaultValue="https://afriexcelai.netlify.app/?mode=addin"/>
   </DefaultSettings>
   <Permissions>ReadWriteDocument</Permissions>
 
@@ -74,8 +74,8 @@
         <bt:Image id="Icon.80" DefaultValue="https://afriexcel.netlify.app/assets/icon-80.png"/>
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://afriexcel.netlify.app/index.html"/>
-        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://afriexcel.netlify.app/"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://afriexcelai.netlify.app/?mode=addin"/>
+        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://afriexcelai.netlify.app/"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GroupLabel" DefaultValue="Assistant IA"/>

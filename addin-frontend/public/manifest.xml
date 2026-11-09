@@ -5,16 +5,16 @@
   xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
   xsi:type="TaskPaneApp">
   <Id>b29d4c78-5e4a-4b91-912a-8457fce2a912</Id>
-  <Version>1.0.0.0</Version>
-  <ProviderName>Assistant IA Afrique</ProviderName>
+  <Version>2.0.0.0</Version>
+  <ProviderName>AfriExcel Technologies</ProviderName>
   <DefaultLocale>fr-FR</DefaultLocale>
-  <DisplayName DefaultValue="Assistant IA Excel"/>
-  <Description DefaultValue="Assistant IA pour Excel : Rapprochement bancaire, SYSCOHADA, Paie locale."/>
-  <IconUrl DefaultValue="https://afriexcel.netlify.app/assets/icon-32.png"/>
-  <HighResolutionIconUrl DefaultValue="https://afriexcel.netlify.app/assets/icon-80.png"/>
-  <SupportUrl DefaultValue="https://afriexcel.netlify.app/"/>
+  <DisplayName DefaultValue="AfriExcel Copilot - Business Plan OHADA"/>
+  <Description DefaultValue="Assistant IA pour la création et la modification de Business Plans bancables SYSCOHADA à 20 feuilles dans Excel."/>
+  <IconUrl DefaultValue="https://afriexcelai.netlify.app/assets/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://afriexcelai.netlify.app/assets/icon-80.png"/>
+  <SupportUrl DefaultValue="https://afriexcelai.netlify.app/"/>
   <AppDomains>
-    <AppDomain>https://afriexcel.netlify.app</AppDomain>
+    <AppDomain>https://afriexcelai.netlify.app</AppDomain>
     <AppDomain>https://appsforoffice.microsoft.com</AppDomain>
     <AppDomain>https://generativelanguage.googleapis.com</AppDomain>
   </AppDomains>
@@ -22,7 +22,7 @@
     <Host Name="Workbook"/>
   </Hosts>
   <DefaultSettings>
-    <SourceLocation DefaultValue="https://afriexcel.netlify.app/index.html"/>
+    <SourceLocation DefaultValue="https://afriexcelai.netlify.app/?mode=addin"/>
   </DefaultSettings>
   <Permissions>ReadWriteDocument</Permissions>
 
@@ -66,25 +66,24 @@
         </DesktopFormFactor>
       </Host>
     </Hosts>
-
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16" DefaultValue="https://afriexcel.netlify.app/assets/icon-16.png"/>
-        <bt:Image id="Icon.32" DefaultValue="https://afriexcel.netlify.app/assets/icon-32.png"/>
-        <bt:Image id="Icon.80" DefaultValue="https://afriexcel.netlify.app/assets/icon-80.png"/>
+        <bt:Image id="Icon.16" DefaultValue="https://afriexcelai.netlify.app/assets/icon-16.png"/>
+        <bt:Image id="Icon.32" DefaultValue="https://afriexcelai.netlify.app/assets/icon-32.png"/>
+        <bt:Image id="Icon.80" DefaultValue="https://afriexcelai.netlify.app/assets/icon-80.png"/>
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://afriexcel.netlify.app/index.html"/>
-        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://afriexcel.netlify.app/"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://afriexcelai.netlify.app/?mode=addin"/>
+        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://afriexcelai.netlify.app/"/>
       </bt:Urls>
       <bt:ShortStrings>
-        <bt:String id="GroupLabel" DefaultValue="Assistant IA"/>
-        <bt:String id="ButtonLabel" DefaultValue="Ouvrir l'Assistant"/>
-        <bt:String id="GetStarted.Title" DefaultValue="Assistant IA Excel"/>
+        <bt:String id="GroupLabel" DefaultValue="AfriExcel"/>
+        <bt:String id="ButtonLabel" DefaultValue="Copilote OHADA"/>
+        <bt:String id="GetStarted.Title" DefaultValue="AfriExcel Copilot"/>
       </bt:ShortStrings>
       <bt:LongStrings>
-        <bt:String id="ButtonToolTip" DefaultValue="Ouvre l'assistant IA pour rapprochement bancaire, SYSCOHADA et paie."/>
-        <bt:String id="GetStarted.Description" DefaultValue="Assistant IA pour Excel - Afrique Francophone."/>
+        <bt:String id="ButtonToolTip" DefaultValue="Ouvre le copilote IA pour générer et modifier vos Business Plans bancables SYSCOHADA à 20 feuilles."/>
+        <bt:String id="GetStarted.Description" DefaultValue="Assistant IA Business Plan & Modélisation Financière OHADA."/>
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>
