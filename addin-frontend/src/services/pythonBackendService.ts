@@ -3,7 +3,7 @@
  * Permet l'injection instantanée de classeurs Excel natifs et le téléchargement direct.
  */
 
-const BACKEND_URL = (import.meta as any).env?.VITE_PYTHON_BACKEND_URL || "http://127.0.0.1:8000";
+const BACKEND_URL = (import.meta as any).env?.VITE_PYTHON_BACKEND_URL || "https://afriexcel.onrender.com";
 
 export interface PythonPlanResponse {
   success: boolean;
