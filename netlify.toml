@@ -1,0 +1,22 @@
+[build]
+  base = "addin-frontend"
+  command = "npm run build"
+  publish = "addin-frontend/dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Redirection SPA
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# En-têtes pour compatibilité Microsoft Excel iframe
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS, PUT, DELETE"
+    Access-Control-Allow-Headers = "Content-Type, Authorization, X-Requested-With"
+    Content-Security-Policy = "frame-ancestors 'self' https://*.office.com https://*.officeapps.live.com https://*.microsoft.com https://*.sharepoint.com https://*.office365.com;"

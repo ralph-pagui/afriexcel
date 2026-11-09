@@ -1,17 +1,17 @@
 /**
- * Webhook Serverless Netlify pour KPay (kpay.site)
+ * Webhook Serverless Netlify pour KPay (kpay.site) - ES Module
  * Reçoit la confirmation de paiement Mobile Money en temps réel (Wave, Orange, MTN, Moov)
  * et met à jour automatiquement la base de données Supabase.
  */
 
-const { createClient } = require('@supabase/supabase-js');
+import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://demo-african-assistant.supabase.co';
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.demo-key';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-exports.handler = async function (event, context) {
+export const handler = async function (event, context) {
   // Uniquement les requêtes POST provenant de KPay
   if (event.httpMethod !== 'POST') {
     return {
@@ -49,10 +49,8 @@ exports.handler = async function (event, context) {
 
       // 2. Si le paiement est validé, activer ou prolonger l'abonnement
       if (isSuccess && customer_phone) {
-        // Rechercher le profil par téléphone ou créer/activer l'abonnement
         const expiresAt = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
         
-        // Notification temps réel envoyée par Supabase
         await supabase
           .from('subscriptions')
           .insert({
@@ -81,3 +79,4 @@ exports.handler = async function (event, context) {
     };
   }
 };
+
