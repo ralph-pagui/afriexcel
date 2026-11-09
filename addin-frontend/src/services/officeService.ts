@@ -116,34 +116,31 @@ export class OfficeService {
             }
           }
 
-          // 2. Tester si le serveur Python local ou distant est disponible
-          const isPythonUp = await PythonBackendService.isAvailable();
-          if (isPythonUp) {
-            onProgress?.(isModif ? "Recalcul financier complet via le moteur Python OHADA..." : "Calcul financier et modélisation via le moteur Python OHADA...");
-            const pyPlan = await PythonBackendService.generateBusinessPlan({
-              prompt: action.productTopic || action.projectName || "business plan",
-              currency: action.currencySymbol || "FCFA",
-              isModification: isModif
-            });
+          // 2. Appel direct et prioritaire au moteur Python OHADA (20 feuilles bancables)
+          onProgress?.(isModif ? "Recalcul financier complet via le moteur Python OHADA (20 feuilles)..." : "Calcul financier et modélisation via le moteur Python OHADA (20 feuilles)...");
+          const pyPlan = await PythonBackendService.generateBusinessPlan({
+            prompt: action.productTopic || action.projectName || "business plan",
+            currency: action.currencySymbol || "FCFA",
+            isModification: isModif
+          });
 
-            if (pyPlan && pyPlan.file_base64) {
-              onProgress?.("Harmonisation des 20 feuilles natives Excel...");
-              const inserted = await PythonBackendService.insertWorksheetsIntoActiveWorkbook(pyPlan.file_base64, isModif);
-              if (inserted) {
-                return {
-                  success: true,
-                  message: isModif
-                    ? `Les 20 feuilles du Business Plan pour '${pyPlan.project_name}' ont été recalculées et mises à jour chirurgicalement avec succès !`
-                    : `Les 20 feuilles professionnelles pour '${pyPlan.project_name}' ont été générées et insérées dans votre classeur avec succès !`
-                };
-              } else {
-                // Si l'insertion directe Office.js échoue sur une version ancienne d'Excel, déclencher le téléchargement direct
-                PythonBackendService.downloadXlsx(pyPlan.file_base64, pyPlan.filename);
-                return {
-                  success: true,
-                  message: `Le classeur complet de 20 feuilles (${pyPlan.filename}) a été généré par le moteur Python et téléchargé sur votre ordinateur !`
-                };
-              }
+          if (pyPlan && pyPlan.file_base64) {
+            onProgress?.("Harmonisation des 20 feuilles natives Excel...");
+            const inserted = await PythonBackendService.insertWorksheetsIntoActiveWorkbook(pyPlan.file_base64, isModif);
+            if (inserted) {
+              return {
+                success: true,
+                message: isModif
+                  ? `Les 20 feuilles du Business Plan pour '${pyPlan.project_name}' ont été recalculées et mises à jour chirurgicalement avec succès !`
+                  : `Les 20 feuilles professionnelles pour '${pyPlan.project_name}' ont été générées et insérées dans votre classeur avec succès !`
+              };
+            } else {
+              // Si l'insertion directe Office.js échoue sur une version ancienne d'Excel, déclencher le téléchargement direct
+              PythonBackendService.downloadXlsx(pyPlan.file_base64, pyPlan.filename);
+              return {
+                success: true,
+                message: `Le classeur complet de 20 feuilles (${pyPlan.filename}) a été généré par le moteur Python et téléchargé sur votre ordinateur !`
+              };
             }
           }
 

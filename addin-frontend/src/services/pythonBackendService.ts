@@ -3,7 +3,8 @@
  * Permet l'injection instantanée de classeurs Excel natifs et le téléchargement direct.
  */
 
-const BACKEND_URL = (import.meta as any).env?.VITE_PYTHON_BACKEND_URL || "https://afriexcel.onrender.com";
+const PRIMARY_URL = (import.meta as any).env?.VITE_PYTHON_BACKEND_URL || "https://afriexcel.onrender.com";
+const LOCAL_URL = "http://127.0.0.1:8000";
 
 export interface PythonPlanResponse {
   success: boolean;
@@ -35,25 +36,28 @@ export interface PythonPlanResponse {
 
 export class PythonBackendService {
   /**
-   * Vérifie si le serveur Python local ou hébergé est en ligne
+   * Vérifie si le serveur Python local ou hébergé est en ligne (timeout tolérant 8s)
    */
   static async isAvailable(): Promise<boolean> {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 1500);
-      const res = await fetch(`${BACKEND_URL}/api/health`, {
-        method: "GET",
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-      return res.ok;
-    } catch (_) {
-      return false;
+    const urls = [PRIMARY_URL, LOCAL_URL];
+    for (const url of urls) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        const res = await fetch(`${url}/api/health`, {
+          method: "GET",
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        if (res.ok) return true;
+      } catch (_) {}
     }
+    return false;
   }
 
   /**
-   * Génère le Business Plan complet via le moteur Python OHADA
+   * Génère le Business Plan complet à 20 feuilles via le moteur Python OHADA
+   * Tente en priorité le serveur de production Render, avec repli automatique sur local
    */
   static async generateBusinessPlan(params: {
     prompt: string;
@@ -65,35 +69,47 @@ export class PythonBackendService {
     isModification?: boolean;
     previousTopic?: string;
   }): Promise<PythonPlanResponse | null> {
-    try {
-      const res = await fetch(`${BACKEND_URL}/api/generate-business-plan`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          prompt: params.prompt,
-          country: params.country || "Côte d'Ivoire",
-          currency: params.currency || "FCFA",
-          total_budget: params.totalBudget,
-          horizon_years: params.horizonYears,
-          template_id: params.template_id || "auto",
-          is_modification: params.isModification || false,
-          previous_topic: params.previousTopic
-        })
-      });
+    const candidateUrls = [PRIMARY_URL, LOCAL_URL];
 
-      if (!res.ok) {
-        console.warn("Erreur HTTP Python Backend:", res.status, res.statusText);
-        return null;
+    for (const url of candidateUrls) {
+      try {
+        const controller = new AbortController();
+        // 60s pour permettre le démarrage à froid de Render et la modélisation complète
+        const timeoutId = setTimeout(() => controller.abort(), 60000);
+
+        const res = await fetch(`${url}/api/generate-business-plan`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            prompt: params.prompt,
+            country: params.country || "Côte d'Ivoire",
+            currency: params.currency || "FCFA",
+            total_budget: params.totalBudget,
+            horizon_years: params.horizonYears,
+            template_id: params.template_id || "auto",
+            is_modification: params.isModification || false,
+            previous_topic: params.previousTopic
+          }),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+          const data: PythonPlanResponse = await res.json();
+          if (data && data.file_base64) {
+            console.log(`[Python Engine] Plan généré avec succès depuis ${url} (20 feuilles)`);
+            return data;
+          }
+        }
+      } catch (e) {
+        console.warn(`[Python Engine] Échec sur ${url}, essai suivant :`, e);
       }
-
-      const data: PythonPlanResponse = await res.json();
-      return data;
-    } catch (e) {
-      console.warn("Échec d'appel au backend Python:", e);
-      return null;
     }
+
+    return null;
   }
 
   /**

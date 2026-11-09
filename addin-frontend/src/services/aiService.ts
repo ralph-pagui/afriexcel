@@ -370,49 +370,46 @@ ${userPrompt}`;
 
     if (isBpCreation || isBpModification) {
       try {
-        const isPyAvailable = await PythonBackendService.isAvailable();
-        if (isPyAvailable) {
-          const previousTopic = previousBpAction?.productTopic || previousBpAction?.projectName || (
-            hasBpSheetsInWorkbook ? "Plantation de Cacao" : undefined
-          );
-          const projectCountry = previousBpAction?.country || countryInfo?.name || "Côte d'Ivoire";
-          const projectCurrency = previousBpAction?.currencySymbol || countryInfo?.currencySymbol || "FCFA";
+        const previousTopic = previousBpAction?.productTopic || previousBpAction?.projectName || (
+          hasBpSheetsInWorkbook ? "Plantation de Cacao" : undefined
+        );
+        const projectCountry = previousBpAction?.country || countryInfo?.name || "Côte d'Ivoire";
+        const projectCurrency = previousBpAction?.currencySymbol || countryInfo?.currencySymbol || "FCFA";
 
-          let finalPrompt = userPrompt;
-          if (isBpModification && previousTopic && !userPrompt.toLowerCase().includes(previousTopic.toLowerCase())) {
-            finalPrompt = `${previousTopic} : ${userPrompt}`;
-          }
+        let finalPrompt = userPrompt;
+        if (isBpModification && previousTopic && !userPrompt.toLowerCase().includes(previousTopic.toLowerCase())) {
+          finalPrompt = `${previousTopic} : ${userPrompt}`;
+        }
 
-          const pyPlan = await PythonBackendService.generateBusinessPlan({
-            prompt: finalPrompt,
-            country: projectCountry,
-            currency: projectCurrency,
-            template_id: template_id || previousBpAction?.template_id || "auto",
-            isModification: isBpModification,
-            previousTopic: previousTopic
-          });
+        const pyPlan = await PythonBackendService.generateBusinessPlan({
+          prompt: finalPrompt,
+          country: projectCountry,
+          currency: projectCurrency,
+          template_id: template_id || previousBpAction?.template_id || "auto",
+          isModification: isBpModification,
+          previousTopic: previousTopic
+        });
 
-          if (pyPlan && pyPlan.success) {
-            const actionType = isBpModification ? 'UPDATE_BUSINESS_PLAN' : 'CREATE_BUSINESS_PLAN';
-            return {
-              thought: `Moteur Python de Modélisation Financière activé : ${isBpModification ? "Modification globale et recalcul instantané" : "Création"} pour '${pyPlan.project_name}'. 20 feuilles de calcul certifiées SYSCOHADA recalculées avec openpyxl. Équilibre Emplois = Ressources garanti, balance Actif = Passif parfaite et graphiques natifs synchronisés.`,
-              message: pyPlan.summary,
-              actions: [
-                {
-                  type: actionType,
-                  projectName: pyPlan.project_name,
-                  productTopic: pyPlan.sector,
-                  sheetCount: pyPlan.sheets_count,
-                  projectType: isBpModification ? 'Modification' : 'Création',
-                  currencySymbol: pyPlan.currency,
-                  filename: pyPlan.filename,
-                  file_base64: pyPlan.file_base64,
-                  kpis: pyPlan.kpis
-                } as any
-              ],
-              suggestedFollowUp: `Souhaitez-vous modifier le montant de l'emprunt bancaire, ajuster les salaires du personnel ou tester un scénario de stress-test pour ${pyPlan.project_name} ?`
-            };
-          }
+        if (pyPlan && pyPlan.success && pyPlan.file_base64) {
+          const actionType = isBpModification ? 'UPDATE_BUSINESS_PLAN' : 'CREATE_BUSINESS_PLAN';
+          return {
+            thought: `Moteur Python de Modélisation Financière activé : ${isBpModification ? "Modification globale et recalcul instantané" : "Création"} pour '${pyPlan.project_name}'. 20 feuilles de calcul certifiées SYSCOHADA recalculées avec openpyxl. Équilibre Emplois = Ressources garanti, balance Actif = Passif parfaite et graphiques natifs synchronisés.`,
+            message: pyPlan.summary,
+            actions: [
+              {
+                type: actionType,
+                projectName: pyPlan.project_name,
+                productTopic: pyPlan.sector,
+                sheetCount: pyPlan.sheets_count,
+                projectType: isBpModification ? 'Modification' : 'Création',
+                currencySymbol: pyPlan.currency,
+                filename: pyPlan.filename,
+                file_base64: pyPlan.file_base64,
+                kpis: pyPlan.kpis
+              } as any
+            ],
+            suggestedFollowUp: `Souhaitez-vous modifier le montant de l'emprunt bancaire, ajuster les salaires du personnel ou tester un scénario de stress-test pour ${pyPlan.project_name} ?`
+          };
         }
       } catch (pyErr) {
         console.warn("Moteur Python non disponible, poursuite du flux standard :", pyErr);
