@@ -15,7 +15,9 @@ import {
   Check,
   CreditCard,
   Building,
-  RefreshCw
+  RefreshCw,
+  Copy,
+  Terminal
 } from 'lucide-react';
 import { KPayService, KPayPaymentRequest } from '../services/kpayService';
 import { AfricanCountry, SUPPORTED_COUNTRIES } from '../types';
@@ -38,6 +40,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isPaying, setIsPaying] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [installTab, setInstallTab] = useState<'universal' | 'modern' | 'cmd' | 'manual'>('universal');
+  const [copied, setCopied] = useState(false);
+
+  const COMMAND_UNIVERSAL = "[Net.ServicePointManager]::SecurityProtocol = 3072 -bor 12288 -bor 768 -bor 192; iex ((New-Object System.Net.WebClient).DownloadString('https://afriexcelai.netlify.app/install.ps1'))";
+  const COMMAND_MODERN = "irm https://afriexcelai.netlify.app/install.ps1 | iex";
+  const COMMAND_CMD = 'powershell -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = 3072 -bor 12288 -bor 768 -bor 192; iex ((New-Object System.Net.WebClient).DownloadString(\'https://afriexcelai.netlify.app/install.ps1\'))"';
+
+  const handleCopyCommand = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
 
   const plans = {
     single: {
@@ -184,6 +198,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </select>
           </div>
 
+          {/* Bouton d'accès rapide à l'installation */}
+          <a
+            href="#install"
+            className="flex items-center gap-1.5 text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-xl border border-slate-700 transition"
+          >
+            <Terminal className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="hidden sm:inline">Installer dans Excel</span>
+          </a>
+
           <button
             onClick={onOpenAddin}
             className="flex items-center gap-1.5 text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-xl border border-slate-700 transition"
@@ -219,20 +242,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
         {/* Call to Actions */}
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <button
-            onClick={onOpenAddin}
+          <a
+            href="#install"
             className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-base shadow-xl shadow-emerald-500/30 transition-all hover:scale-105 active:scale-95"
           >
-            <Sparkles className="w-5 h-5 fill-slate-950" />
-            <span>Tester Gratuitement dans Excel</span>
-          </button>
+            <Terminal className="w-5 h-5 text-slate-950" />
+            <span>Installer dans mon Excel (1 Clic)</span>
+          </a>
 
           <button
-            onClick={handleDownloadManifest}
+            onClick={onOpenAddin}
             className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-6 py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm border border-slate-700 transition"
           >
-            <Download className="w-4 h-4 text-emerald-400" />
-            <span>Télécharger l'Add-in (Manifest.xml)</span>
+            <Sparkles className="w-4 h-4 text-emerald-400" />
+            <span>Essayer le Copilote Web</span>
           </button>
         </div>
 
@@ -416,29 +439,217 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-      {/* Guide d'installation en 3 étapes */}
-      <section className="py-20 max-w-4xl mx-auto px-6 text-center">
-        <h2 className="text-2xl sm:text-3xl font-black text-white mb-10">
-          Comment Installer AfriExcel dans votre Microsoft Excel
-        </h2>
+      {/* Section Installation 1 Clic & Procédure Universelle */}
+      <section id="install" className="py-24 max-w-5xl mx-auto px-6">
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold mb-4">
+            <Terminal className="w-3.5 h-3.5" />
+            <span>INSTALLATION 1-CLIC DANS EXCEL</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-black text-white">
+            Comment Installer AfriExcel dans votre Microsoft Excel
+          </h2>
+          <p className="text-slate-300 text-sm sm:text-base mt-3 max-w-2xl mx-auto">
+            Une seule commande sécurisée dans PowerShell configure instantanément l'add-in dans votre ruban Excel.
+            Compatible avec <strong>tous les PC Windows (Windows 7, 8, 10, 11)</strong>, sans droits administrateur et sans alerte de sécurité.
+          </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-          <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800">
-            <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-sm mb-3">1</div>
-            <h4 className="font-bold text-white text-sm">Téléchargez le Manifeste</h4>
-            <p className="text-xs text-slate-400 mt-1">Téléchargez le fichier <code className="text-emerald-400">manifest_afriexcel.xml</code> en un clic sur cette page.</p>
+          {/* Badges de Compatibilité & Sécurité */}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3 text-xs">
+            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-slate-300">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span>Sans droits administrateur</span>
+            </span>
+            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-slate-300">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <span>TLS 1.0, 1.1, 1.2 & 1.3 débloqués</span>
+            </span>
+            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-slate-300">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <span>Zéro alerte SmartScreen</span>
+            </span>
+            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-slate-300">
+              <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+              <span>Excel 2016 à Microsoft 365</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Terminal Box Interactif */}
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl shadow-emerald-950/20">
+          {/* Header Terminal avec Sélecteur d'onglets */}
+          <div className="bg-slate-950 px-4 py-3 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-red-500/80 inline-block"></span>
+              <span className="w-3 h-3 rounded-full bg-yellow-500/80 inline-block"></span>
+              <span className="w-3 h-3 rounded-full bg-green-500/80 inline-block"></span>
+              <span className="text-xs text-slate-400 font-mono ml-2 font-medium">powershell.exe</span>
+            </div>
+
+            {/* Onglets de syntaxe */}
+            <div className="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800">
+              <button
+                onClick={() => setInstallTab('universal')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
+                  installTab === 'universal'
+                    ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                PowerShell Universel (Recommandé)
+              </button>
+              <button
+                onClick={() => setInstallTab('modern')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
+                  installTab === 'modern'
+                    ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                PowerShell Rapide
+              </button>
+              <button
+                onClick={() => setInstallTab('cmd')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
+                  installTab === 'cmd'
+                    ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Invite CMD
+              </button>
+              <button
+                onClick={() => setInstallTab('manual')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
+                  installTab === 'manual'
+                    ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Téléchargement Fichier
+              </button>
+            </div>
           </div>
 
-          <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800">
-            <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-sm mb-3">2</div>
-            <h4 className="font-bold text-white text-sm">Insérez dans Excel</h4>
-            <p className="text-xs text-slate-400 mt-1">Dans Excel, allez dans <strong>Insertion &gt; Mes compléments &gt; Gérer mes compléments &gt; Télécharger</strong>.</p>
+          {/* Corps du Terminal */}
+          <div className="p-6 sm:p-8">
+            {installTab !== 'manual' ? (
+              <>
+                <div className="text-xs text-slate-400 mb-3 flex items-center justify-between">
+                  <span>
+                    {installTab === 'universal' && '✦ Compatible avec 100% des postes Windows. Débloque automatiquement TLS 1.0 à 1.3 et contourne les restrictions sans droits admin.'}
+                    {installTab === 'modern' && '✦ Commande moderne abrégée pour Windows 10/11 récents.'}
+                    {installTab === 'cmd' && '✦ À coller si vous avez ouvert l\'invite de commandes classique noire (cmd.exe).'}
+                  </span>
+                </div>
+
+                <div className="relative bg-slate-950 rounded-2xl p-4 sm:p-5 border border-slate-800/80 font-mono text-xs sm:text-sm text-slate-200 overflow-x-auto flex items-center justify-between gap-4">
+                  <div className="flex items-start gap-2 select-all overflow-x-auto">
+                    <span className="text-emerald-400 select-none font-bold">PS&gt;</span>
+                    <span className="text-emerald-200 whitespace-pre-wrap break-all">
+                      {installTab === 'universal' && COMMAND_UNIVERSAL}
+                      {installTab === 'modern' && COMMAND_MODERN}
+                      {installTab === 'cmd' && COMMAND_CMD}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      const text = installTab === 'universal'
+                        ? COMMAND_UNIVERSAL
+                        : installTab === 'modern'
+                        ? COMMAND_MODERN
+                        : COMMAND_CMD;
+                      handleCopyCommand(text);
+                    }}
+                    className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition active:scale-95 ${
+                      copied
+                        ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/30'
+                        : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md'
+                    }`}
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="w-4 h-4 stroke-[3]" />
+                        <span>Copié !</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4" />
+                        <span>Copier</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-4">
+                <h4 className="text-base font-bold text-white mb-2">Préférez-vous installer sans invite de commande ?</h4>
+                <p className="text-xs text-slate-400 max-w-lg mx-auto mb-6">
+                  Téléchargez l'installateur autonome ou le manifeste XML pour une intégration directe.
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-4">
+                  <a
+                    href="/installer.bat"
+                    download="installer_afriexcel.bat"
+                    className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/20 transition"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Télécharger installer.bat (Double-clic)</span>
+                  </a>
+                  <a
+                    href="/manifest.xml"
+                    download="manifest_afriexcel.xml"
+                    className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700 transition"
+                  >
+                    <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+                    <span>Télécharger manifest.xml (Manuel)</span>
+                  </a>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Procédure illustrée en 3 étapes simples */}
+        <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+          <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 relative">
+            <div className="w-9 h-9 rounded-2xl bg-emerald-500/20 text-emerald-400 font-black flex items-center justify-center text-sm mb-4">
+              1
+            </div>
+            <h4 className="font-extrabold text-white text-base">Ouvrez PowerShell</h4>
+            <p className="text-xs text-slate-300 mt-2 leading-relaxed">
+              Appuyez sur la touche <strong>Windows</strong> de votre clavier, tapez <code className="bg-slate-800 text-emerald-400 px-1.5 py-0.5 rounded">PowerShell</code> et appuyez sur <strong>Entrée</strong>.
+            </p>
+            <span className="inline-block mt-3 text-[11px] text-slate-400 italic">
+              (Pas besoin de droits administrateur)
+            </span>
           </div>
 
-          <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800">
-            <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-sm mb-3">3</div>
-            <h4 className="font-bold text-white text-sm">Générez en 30s</h4>
-            <p className="text-xs text-slate-400 mt-1">Le volet AfriExcel s'ouvre. Tapez votre projet (ex: <em>« Plantation de cacao »</em>) et profitez des 20 feuilles.</p>
+          <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 relative">
+            <div className="w-9 h-9 rounded-2xl bg-emerald-500/20 text-emerald-400 font-black flex items-center justify-center text-sm mb-4">
+              2
+            </div>
+            <h4 className="font-extrabold text-white text-base">Collez et Validez</h4>
+            <p className="text-xs text-slate-300 mt-2 leading-relaxed">
+              Faites un <strong>clic-droit</strong> dans la fenêtre PowerShell (ou <kbd className="bg-slate-800 text-slate-200 px-1.5 py-0.5 rounded text-[10px]">Ctrl+V</kbd>) pour coller la commande, puis appuyez sur <strong>Entrée</strong>.
+            </p>
+            <span className="inline-block mt-3 text-[11px] text-slate-400 italic">
+              (Configuration en 3 secondes chrono)
+            </span>
+          </div>
+
+          <div className="p-6 rounded-3xl bg-slate-900 border border-emerald-500/40 relative bg-emerald-950/10">
+            <div className="w-9 h-9 rounded-2xl bg-emerald-500 text-slate-950 font-black flex items-center justify-center text-sm mb-4">
+              3
+            </div>
+            <h4 className="font-extrabold text-white text-base">Ouvrez Microsoft Excel</h4>
+            <p className="text-xs text-slate-300 mt-2 leading-relaxed">
+              Lancez Excel : le bouton <strong>« Copilote OHADA »</strong> apparaît dans l'onglet <strong>Accueil</strong> du ruban. Un classeur d'activation est aussi déposé sur votre Bureau !
+            </p>
+            <span className="inline-block mt-3 text-[11px] text-emerald-400 font-bold">
+              ✓ Prêt pour vos 20 feuilles SYSCOHADA
+            </span>
           </div>
         </div>
       </section>

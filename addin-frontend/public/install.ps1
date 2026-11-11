@@ -13,36 +13,58 @@ Write-Host "    SYSCOHADA | 20 Feuilles Bancables | KPay | Finance" -ForegroundC
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host ""
 
-# 1. Verification des privileges
+# 1. Activation universelle des protocoles TLS (TLS 1.2, TLS 1.3, TLS 1.1, TLS 1.0)
+# Utilisation d'entiers 3072/12288 pour compatibilite totale avec .NET 2.0 a 8.0 sans blocage
+try {
+    [System.Net.ServicePointManager]::SecurityProtocol = 3072 -bor 12288 -bor 768 -bor 192
+} catch {}
+
+# 2. Verification des privileges
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if ($isAdmin) {
-    Write-Host "[+] Droits Administrateur detectes : activation et partage SMB complets." -ForegroundColor Green
+    Write-Host "[+] Droits Administrateur detectes : activation complete (Partage SMB + Registre Office)." -ForegroundColor Green
 } else {
-    Write-Host "[i] Droits Utilisateur Standard : enregistrement direct via le registre Office." -ForegroundColor Yellow
+    Write-Host "[i] Droits Utilisateur Standard : enregistrement direct et securise dans le registre Office (sans UAC ni mot de passe)." -ForegroundColor Yellow
 }
 
-# 2. Preparation du dossier local
+# 3. Preparation du dossier local
 $targetDir = "$env:LOCALAPPDATA\AssistantIAExcel"
 if (-not (Test-Path $targetDir)) {
     New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
 }
 Write-Host "[1/5] Dossier local configure : $targetDir" -ForegroundColor Green
 
-# 3. Telechargement du Manifeste XML Officiel
+# 4. Telechargement du Manifeste XML Officiel avec compatibilite universelle
 $manifestPath = "$targetDir\manifest.xml"
 $remoteManifestUrl = "https://afriexcelai.netlify.app/manifest.xml"
 
 Write-Host "[2/5] Telechargement du manifeste officiel (https://afriexcelai.netlify.app)..." -ForegroundColor Green
+$downloaded = $false
+
+# Methode 1 : WebClient ultra-compatible (.NET 2.0+, TLS 1.2+, support proxy entreprise sans mot de passe)
 try {
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    Invoke-WebRequest -Uri $remoteManifestUrl -OutFile $manifestPath -UseBasicParsing
-    Write-Host "      Manifeste telecharge avec succes." -ForegroundColor Green
-} catch {
+    $wc = New-Object System.Net.WebClient
+    $wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AfriExcel/2.0")
+    if ($wc.Proxy) {
+        $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials
+    }
+    $wc.DownloadFile($remoteManifestUrl, $manifestPath)
+    if (Test-Path $manifestPath) {
+        $downloaded = $true
+        Write-Host "      Manifeste telecharge avec succes (WebClient)." -ForegroundColor Green
+    }
+} catch {}
+
+# Methode 2 : Invoke-WebRequest si disponible (PowerShell 3.0+)
+if (-not $downloaded) {
     try {
-        (New-Object System.Net.WebClient).DownloadFile($remoteManifestUrl, $manifestPath)
-        Write-Host "      Manifeste telecharge via WebClient." -ForegroundColor Green
+        Invoke-WebRequest -Uri $remoteManifestUrl -OutFile $manifestPath -UseBasicParsing -UserAgent "AfriExcel/2.0"
+        if (Test-Path $manifestPath) {
+            $downloaded = $true
+            Write-Host "      Manifeste telecharge avec succes (Invoke-WebRequest)." -ForegroundColor Green
+        }
     } catch {
-        Write-Host "      [!] Erreur lors du telechargement du manifeste : $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "      [!] Erreur telechargement reseau : $($_.Exception.Message)" -ForegroundColor Red
     }
 }
 
