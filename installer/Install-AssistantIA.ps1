@@ -63,33 +63,51 @@ if (-not $downloaded) {
             $downloaded = $true
             Write-Host "      Manifeste telecharge avec succes (Invoke-WebRequest)." -ForegroundColor Green
         }
+    } catch {}
+}
+
+# Methode 3 : Fallback CDN GitHub haute disponibilite (Fastly Edge)
+if (-not $downloaded) {
+    try {
+        $githubManifest = "https://raw.githubusercontent.com/ralph-pagui/afriexcel/main/addin-frontend/public/manifest.xml"
+        (New-Object System.Net.WebClient).DownloadFile($githubManifest, $manifestPath)
+        if (Test-Path $manifestPath) {
+            $downloaded = $true
+            Write-Host "      Manifeste telecharge avec succes via CDN GitHub." -ForegroundColor Green
+        }
     } catch {
         Write-Host "      [!] Erreur telechargement reseau : $($_.Exception.Message)" -ForegroundColor Red
     }
 }
 
-# 4. Partage Reseau SMB (si administrateur)
+# 4. Configuration du Partage Reseau SMB & Catalogue Approuve Office
 $catalogGuid = "{E5B75A18-6326-4C10-9CE2-78A7A0864B7A}"
 $addinGuid = "b29d4c78-5e4a-4b91-912a-8457fce2a912"
 $uncPath = "\\$env:COMPUTERNAME\AssistantIAExcel"
 
-if ($isAdmin) {
-    try {
-        net share AssistantIAExcel /delete 2>$null | Out-Null
-        cmd.exe /c "net share AssistantIAExcel=`"$targetDir`" /grant:Everyone,FULL" 2>$null | Out-Null
-        if ($LASTEXITCODE -ne 0) {
-            cmd.exe /c "net share AssistantIAExcel=`"$targetDir`" /grant:`"Tout le monde`",FULL" 2>$null | Out-Null
-        }
-        Write-Host "      Partage SMB configure : $uncPath" -ForegroundColor Green
-        
-        $regCatalog = "HKCU:\Software\Microsoft\Office\16.0\WEF\TrustedCatalogs\$catalogGuid"
-        New-Item -Path $regCatalog -Force | Out-Null
-        Set-ItemProperty -Path $regCatalog -Name "Id" -Value $catalogGuid -Type String
-        Set-ItemProperty -Path $regCatalog -Name "Url" -Value $uncPath -Type String
-        Set-ItemProperty -Path $regCatalog -Name "Flags" -Value 1 -Type DWord
-    } catch {
-        Write-Host "      [i] Partage SMB ignore : enregistrement direct Developer actif." -ForegroundColor Gray
+# Tentative de creation du partage reseau SMB
+try {
+    net share AssistantIAExcel /delete 2>$null | Out-Null
+    cmd.exe /c "net share AssistantIAExcel=`"$targetDir`" /grant:Everyone,FULL" 2>$null | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        cmd.exe /c "net share AssistantIAExcel=`"$targetDir`" /grant:`"Tout le monde`",FULL" 2>$null | Out-Null
     }
+    if ($LASTEXITCODE -ne 0) {
+        cmd.exe /c "net share AssistantIAExcel=`"$targetDir`"" 2>$null | Out-Null
+    }
+    Write-Host "      Partage SMB prepare : $uncPath" -ForegroundColor Green
+} catch {}
+
+# Enregistrement OBLIGATOIRE du Catalogue Approuve dans HKCU (ne necessite aucun droit administrateur)
+try {
+    $regCatalog = "HKCU:\Software\Microsoft\Office\16.0\WEF\TrustedCatalogs\$catalogGuid"
+    New-Item -Path $regCatalog -Force | Out-Null
+    Set-ItemProperty -Path $regCatalog -Name "Id" -Value $catalogGuid -Type String
+    Set-ItemProperty -Path $regCatalog -Name "Url" -Value $uncPath -Type String
+    Set-ItemProperty -Path $regCatalog -Name "Flags" -Value 1 -Type DWord
+    Write-Host "      Catalogue de confiance WEF enregistre ($uncPath)." -ForegroundColor Green
+} catch {
+    Write-Host "      [i] Inscription catalogue WEF locale." -ForegroundColor Gray
 }
 
 # 5. Enregistrement direct Developer dans le Registre Office (fonctionne sans admin)
@@ -185,15 +203,12 @@ function Create-ActivationWorkbook($path) {
 </Relationships>
 '@
 
-    $storeLocation = if ($isAdmin) { $uncPath } else { "developer" }
-    $storeType = if ($isAdmin) { "FileSystem" } else { "Registry" }
-
     $weXml = @"
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <we:webextension xmlns:we="http://schemas.microsoft.com/office/webextensions/webextension/2010/11" id="$catalogGuid">
-  <we:reference id="$addinGuid" version="2.0.0.0" store="$storeLocation" storeType="$storeType"/>
+  <we:reference id="$addinGuid" version="2.0.0.0" store="$uncPath" storeType="FileSystem"/>
   <we:alternateReferences>
-    <we:reference id="$addinGuid" version="2.0.0.0" store="developer" storeType="Registry"/>
+    <we:reference id="$addinGuid" version="2.0.0.0" store="$uncPath" storeType="FileSystem"/>
   </we:alternateReferences>
   <we:properties>
     <we:property name="Office.AutoShowTaskpaneWithDocument" value="true"/>
