@@ -13,9 +13,9 @@ Write-Host "    SYSCOHADA | 20 Feuilles Bancables | KPay | Finance" -ForegroundC
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host ""
 
-# 1. Activation universelle des protocoles TLS (TLS 1.2, TLS 1.3, TLS 1.1, TLS 1.0)
+# 1. Activation universelle des protocoles TLS (TLS 1.2 + TLS 1.0)
 try {
-    [System.Net.ServicePointManager]::SecurityProtocol = 3072 -bor 12288 -bor 768 -bor 192
+    [System.Net.ServicePointManager]::SecurityProtocol = 3072 -bor 768
 } catch {}
 
 # 2. Verification des privileges
@@ -35,9 +35,10 @@ Write-Host "[1/5] Dossier local configure : $targetDir" -ForegroundColor Green
 
 # 4. Telechargement du Manifeste XML Officiel
 $manifestPath = "$targetDir\manifest.xml"
-$remoteManifestUrl = "https://afriexcelai.netlify.app/manifest.xml"
+$remoteManifestUrl = "https://raw.githubusercontent.com/ralph-pagui/afriexcel/main/addin-frontend/public/manifest.xml"
+$fallbackManifestUrl = "https://afriexcelai.netlify.app/manifest.xml"
 
-Write-Host "[2/5] Telechargement du manifeste officiel (https://afriexcelai.netlify.app)..." -ForegroundColor Green
+Write-Host "[2/5] Telechargement du manifeste officiel..." -ForegroundColor Green
 $downloaded = $false
 
 # Methode 1 : WebClient ultra-compatible (.NET 2.0+, TLS 1.2+, support proxy entreprise)

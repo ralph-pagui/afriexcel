@@ -40,12 +40,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isPaying, setIsPaying] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
-  const [installTab, setInstallTab] = useState<'universal' | 'modern' | 'cmd' | 'manual'>('universal');
+  const [installTab, setInstallTab] = useState<'modern' | 'universal' | 'cmd' | 'manual'>('modern');
   const [copied, setCopied] = useState(false);
 
-  const COMMAND_UNIVERSAL = "[Net.ServicePointManager]::SecurityProtocol = 3072 -bor 12288 -bor 768 -bor 192; iex ((New-Object System.Net.WebClient).DownloadString('https://afriexcelai.netlify.app/install.ps1'))";
-  const COMMAND_MODERN = "irm https://afriexcelai.netlify.app/install.ps1 | iex";
-  const COMMAND_CMD = 'powershell -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = 3072 -bor 12288 -bor 768 -bor 192; iex ((New-Object System.Net.WebClient).DownloadString(\'https://afriexcelai.netlify.app/install.ps1\'))"';
+  const COMMAND_MODERN = "irm https://raw.githubusercontent.com/ralph-pagui/afriexcel/main/addin-frontend/public/install.ps1 | iex";
+  const COMMAND_UNIVERSAL = "[Net.ServicePointManager]::SecurityProtocol = 3072 -bor 768; iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/ralph-pagui/afriexcel/main/addin-frontend/public/install.ps1'))";
+  const COMMAND_CMD = 'powershell -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = 3072 -bor 768; iex ((New-Object System.Net.WebClient).DownloadString(\'https://raw.githubusercontent.com/ralph-pagui/afriexcel/main/addin-frontend/public/install.ps1\'))"';
 
   const handleCopyCommand = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -489,16 +489,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             {/* Onglets de syntaxe */}
             <div className="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800">
               <button
-                onClick={() => setInstallTab('universal')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
-                  installTab === 'universal'
-                    ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                PowerShell Universel (Recommandé)
-              </button>
-              <button
                 onClick={() => setInstallTab('modern')}
                 className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
                   installTab === 'modern'
@@ -506,7 +496,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                PowerShell Rapide
+                PowerShell 1-Clic (Recommandé)
+              </button>
+              <button
+                onClick={() => setInstallTab('universal')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
+                  installTab === 'universal'
+                    ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                PowerShell Universel
               </button>
               <button
                 onClick={() => setInstallTab('cmd')}
@@ -537,8 +537,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <>
                 <div className="text-xs text-slate-400 mb-3 flex items-center justify-between">
                   <span>
-                    {installTab === 'universal' && '✦ Compatible avec 100% des postes Windows. Débloque automatiquement TLS 1.0 à 1.3 et contourne les restrictions sans droits admin.'}
-                    {installTab === 'modern' && '✦ Commande moderne abrégée pour Windows 10/11 récents.'}
+                    {installTab === 'modern' && '✦ Commande recommandée ultra-rapide 1-clic pour Windows 10 & 11.'}
+                    {installTab === 'universal' && '✦ Commande universelle compatible avec tous les PC Windows et toutes les versions de PowerShell.'}
                     {installTab === 'cmd' && '✦ À coller si vous avez ouvert l\'invite de commandes classique noire (cmd.exe).'}
                   </span>
                 </div>
