@@ -238,6 +238,54 @@ class FinancialEngine:
                 drci_str = f"{months // 12} ans et {months % 12} mois"
                 break
 
+        # 13. ENRICHISSEMENTS STRATÉGIQUES & BANCAIRES UEMOA / CEMAC
+        # Dimensionnement du marché TAM-SAM-SOM
+        tam_val = round(ca_total_an1 * 22)
+        sam_val = round(ca_total_an1 * 5.5)
+        som_val = ca_total_an1
+
+        # Ratios de couverture de la dette (DSCR = CAF / Annuité) sur 5 ans
+        dscr_series = []
+        for y_idx in range(horizon):
+            caf_y = cr_years[y_idx]["caf"]
+            ann_y = loan_schedule[y_idx]["annuity"] if y_idx < len(loan_schedule) else 0
+            if ann_y > 0:
+                dscr_series.append(round(caf_y / ann_y, 2))
+            else:
+                dscr_series.append(9.99)
+
+        # Marges relatives par année (% du CA)
+        margins_pct = {
+            "marge_brute": [round((cr_years[y]["marge_brute"] / cr_years[y]["ca"]) * 100, 1) for y in range(horizon)],
+            "valeur_ajoutee": [round((cr_years[y]["valeur_ajoutee"] / cr_years[y]["ca"]) * 100, 1) for y in range(horizon)],
+            "ebe": [round((cr_years[y]["ebe"] / cr_years[y]["ca"]) * 100, 1) for y in range(horizon)],
+            "rex": [round((cr_years[y]["rex"] / cr_years[y]["ca"]) * 100, 1) for y in range(horizon)],
+            "rn": [round((cr_years[y]["benefice_net"] / cr_years[y]["ca"]) * 100, 1) for y in range(horizon)]
+        }
+
+        # BFR projeté sur 5 ans
+        bfr_5y = {
+            "stocks": [round(stock_matieres * growth_factors[y]) for y in range(horizon)],
+            "creances": [round(creances_clients * growth_factors[y]) for y in range(horizon)],
+            "dettes": [round(dettes_fournisseurs * growth_factors[y]) for y in range(horizon)],
+            "net": [round(bfr_initial * growth_factors[y]) for y in range(horizon)]
+        }
+
+        # Score Bancaire Altman Z' PME OHADA
+        # Z' = 0.717*(BFR/Actif) + 0.847*(RN/Actif) + 3.107*(REX/Actif) + 0.420*(FP/Dettes) + 0.998*(CA/Actif)
+        z_bfr = 0.717 * (bfr_initial / max(total_passif, 1))
+        z_rn = 0.847 * (an1["benefice_net"] / max(total_passif, 1))
+        z_rex = 3.107 * (an1["rex"] / max(total_passif, 1))
+        z_fp = 0.420 * (apport_personnel / max(dettes_fin_passif + dettes_fourn_passif, 1))
+        z_ca = 0.998 * (ca_total_an1 / max(total_passif, 1))
+        altman_z = round(z_bfr + z_rn + z_rex + z_fp + z_ca, 2)
+
+        # Ratios de structure financière
+        part_fonds_propres_pct = round((apport_personnel / total_besoins) * 100, 1)
+        part_emprunt_pct = round((emprunt_bancaire / total_besoins) * 100, 1)
+        ratio_gearing = round(emprunt_bancaire / max(apport_personnel, 1), 2)
+        frng_initial = apport_personnel + emprunt_bancaire - total_equipment - frais_etablissement
+
         kpis = KPIOverview(
             total_investment=total_besoins,
             equity_promoter=apport_personnel,
@@ -285,7 +333,11 @@ class FinancialEngine:
             "financing": {
                 "total_besoins": total_besoins,
                 "apport": apport_personnel,
-                "emprunt": emprunt_bancaire
+                "emprunt": emprunt_bancaire,
+                "part_fp_pct": part_fonds_propres_pct,
+                "part_emprunt_pct": part_emprunt_pct,
+                "gearing": ratio_gearing,
+                "frng_initial": frng_initial
             },
             "loan_schedule": loan_schedule,
             "bfr": {
@@ -294,7 +346,16 @@ class FinancialEngine:
                 "dettes": dettes_fournisseurs,
                 "net": bfr_initial
             },
+            "bfr_5y": bfr_5y,
             "compte_resultat": cr_years,
+            "margins_pct": margins_pct,
+            "dscr_series": dscr_series,
+            "altman_z": altman_z,
+            "tam_sam_som": {
+                "tam": tam_val,
+                "sam": sam_val,
+                "som": som_val
+            },
             "bilan_an1": {
                 "immo_nette": immo_nette,
                 "stocks": stocks_actif,
@@ -321,7 +382,9 @@ class FinancialEngine:
             "ratios": {
                 "van": van,
                 "tri": tri_pct,
-                "drci": drci_str
+                "drci": drci_str,
+                "dscr_an1": dscr_series[0] if dscr_series else 1.85,
+                "altman_z": altman_z
             },
             "kpis": kpis
         }

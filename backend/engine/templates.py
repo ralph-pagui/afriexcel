@@ -1,7 +1,7 @@
 """
 Catalogue des Templates de Design Professionnels pour Business Plans OHADA AfriExcel
 Chaque template définit une identité visuelle complète (palettes, typographies, bannières,
-cartes graphiques et charts natifs Excel) inspirée des standards des cabinets internationaux.
+cartes graphiques et charts natifs Excel) inspirée des standards des comités de crédit bancaire.
 """
 
 from typing import Dict, Any, List
@@ -28,6 +28,14 @@ class ThemeConfig:
     total_bg: str
     total_text: str
     chart_primary: str
+    card_bg: str = "F8FAFC"
+    card_border: str = "CBD5E1"
+    badge_success_bg: str = "DCFCE7"
+    badge_success_fg: str = "14532D"
+    badge_warning_bg: str = "FEF3C7"
+    badge_warning_fg: str = "78350F"
+    chart_secondary: str = "0284C7"
+    chart_accent: str = "10B981"
 
 TEMPLATE_CATALOG: Dict[str, ThemeConfig] = {
     "emerald_africa": ThemeConfig(
@@ -49,7 +57,15 @@ TEMPLATE_CATALOG: Dict[str, ThemeConfig] = {
         border_color="BBF7D0",
         total_bg="DCFCE7",
         total_text="14532D",
-        chart_primary="15803D"
+        chart_primary="15803D",
+        card_bg="F0FDF4",
+        card_border="86EFAC",
+        badge_success_bg="DCFCE7",
+        badge_success_fg="14532D",
+        badge_warning_bg="FEF3C7",
+        badge_warning_fg="78350F",
+        chart_secondary="F59E0B",
+        chart_accent="059669"
     ),
     "sahara_commerce": ThemeConfig(
         id="sahara_commerce",
@@ -70,7 +86,15 @@ TEMPLATE_CATALOG: Dict[str, ThemeConfig] = {
         border_color="FED7AA",
         total_bg="FFEDD5",
         total_text="9A3412",
-        chart_primary="C2410C"
+        chart_primary="C2410C",
+        card_bg="FFF7ED",
+        card_border="FDBA74",
+        badge_success_bg="DCFCE7",
+        badge_success_fg="14532D",
+        badge_warning_bg="FEF3C7",
+        badge_warning_fg="78350F",
+        chart_secondary="D97706",
+        chart_accent="B45309"
     ),
     "royal_navy": ThemeConfig(
         id="royal_navy",
@@ -91,7 +115,15 @@ TEMPLATE_CATALOG: Dict[str, ThemeConfig] = {
         border_color="BAE6FD",
         total_bg="E0F2FE",
         total_text="0369A1",
-        chart_primary="1E3A8A"
+        chart_primary="1E3A8A",
+        card_bg="F8FAFC",
+        card_border="CBD5E1",
+        badge_success_bg="DCFCE7",
+        badge_success_fg="14532D",
+        badge_warning_bg="FEF3C7",
+        badge_warning_fg="78350F",
+        chart_secondary="0284C7",
+        chart_accent="3B82F6"
     ),
     "cyber_indigo": ThemeConfig(
         id="cyber_indigo",
@@ -112,7 +144,15 @@ TEMPLATE_CATALOG: Dict[str, ThemeConfig] = {
         border_color="DDD6FE",
         total_bg="EDE9FE",
         total_text="4338CA",
-        chart_primary="4F46E5"
+        chart_primary="4F46E5",
+        card_bg="F5F3FF",
+        card_border="C7D2FE",
+        badge_success_bg="DCFCE7",
+        badge_success_fg="14532D",
+        badge_warning_bg="FEF3C7",
+        badge_warning_fg="78350F",
+        chart_secondary="06B6D4",
+        chart_accent="8B5CF6"
     )
 }
 

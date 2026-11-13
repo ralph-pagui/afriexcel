@@ -151,6 +151,7 @@ export class OfficeService {
             productTopic: action.productTopic,
             sheetCount: action.sheetCount,
             currencySymbol: action.currencySymbol,
+            template_id: (action as any).template_id,
             sheetsToGenerate: action.sheetsToGenerate,
             onProgress: (name, current, total) => {
               onProgress?.(`Feuille ${current}/${total} : ${name}...`);
