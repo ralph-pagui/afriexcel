@@ -1,6 +1,6 @@
 # ==============================================================================
 # INSTALLATEUR ASSISTANT IA EXCEL - AFRIQUE FRANCOPHONE (SYSCOHADA & PAIE)
-# Script d'installation automatique et directe dans Microsoft Excel
+# Script d'installation universel et automatique dans Microsoft Excel
 # ==============================================================================
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -14,7 +14,6 @@ Write-Host "============================================================" -Foreg
 Write-Host ""
 
 # 1. Activation universelle des protocoles TLS (TLS 1.2, TLS 1.3, TLS 1.1, TLS 1.0)
-# Utilisation d'entiers 3072/12288 pour compatibilite totale avec .NET 2.0 a 8.0 sans blocage
 try {
     [System.Net.ServicePointManager]::SecurityProtocol = 3072 -bor 12288 -bor 768 -bor 192
 } catch {}
@@ -27,21 +26,21 @@ if ($isAdmin) {
     Write-Host "[i] Droits Utilisateur Standard : enregistrement direct et securise dans le registre Office (sans UAC ni mot de passe)." -ForegroundColor Yellow
 }
 
-# 3. Preparation du dossier local
+# 3. Preparation du dossier local permanent
 $targetDir = "$env:LOCALAPPDATA\AssistantIAExcel"
 if (-not (Test-Path $targetDir)) {
     New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
 }
 Write-Host "[1/5] Dossier local configure : $targetDir" -ForegroundColor Green
 
-# 4. Telechargement du Manifeste XML Officiel avec compatibilite universelle
+# 4. Telechargement du Manifeste XML Officiel
 $manifestPath = "$targetDir\manifest.xml"
 $remoteManifestUrl = "https://afriexcelai.netlify.app/manifest.xml"
 
 Write-Host "[2/5] Telechargement du manifeste officiel (https://afriexcelai.netlify.app)..." -ForegroundColor Green
 $downloaded = $false
 
-# Methode 1 : WebClient ultra-compatible (.NET 2.0+, TLS 1.2+, support proxy entreprise sans mot de passe)
+# Methode 1 : WebClient ultra-compatible (.NET 2.0+, TLS 1.2+, support proxy entreprise)
 try {
     $wc = New-Object System.Net.WebClient
     $wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AfriExcel/2.0")
@@ -66,7 +65,7 @@ if (-not $downloaded) {
     } catch {}
 }
 
-# Methode 3 : Fallback CDN GitHub haute disponibilite (Fastly Edge)
+# Methode 3 : Fallback CDN GitHub
 if (-not $downloaded) {
     try {
         $githubManifest = "https://raw.githubusercontent.com/ralph-pagui/afriexcel/main/addin-frontend/public/manifest.xml"
@@ -80,10 +79,18 @@ if (-not $downloaded) {
     }
 }
 
-# 4. Configuration du Partage Reseau SMB & Catalogue Approuve Office
-$catalogGuid = "{E5B75A18-6326-4C10-9CE2-78A7A0864B7A}"
+# 5. Configuration des Catalogues Approuves Office (Multi-Canal Universel)
+Write-Host "[3/5] Configuration des Catalogues de Confiance Office..." -ForegroundColor Green
+$catalogGuid1 = "{E5B75A18-6326-4C10-9CE2-78A7A0864B7A}"
+$catalogGuid2 = "{B29D4C78-5E4A-4B91-912A-8457FCE2A912}"
+$catalogGuid3 = "{C38E5D89-6F5B-4C02-823B-9568GDF3B023}"
+$catalogGuid4 = "{D49F6E9A-706C-4D13-934C-0679HE4CA134}"
 $addinGuid = "b29d4c78-5e4a-4b91-912a-8457fce2a912"
+
 $uncPath = "\\$env:COMPUTERNAME\AssistantIAExcel"
+$uncLocalhost = "\\localhost\c$" + $targetDir.Substring(2)
+$fileUri = "file:///" + ($targetDir.Replace("\", "/")) + "/"
+$directPath = "$targetDir\"
 
 # Tentative de creation du partage reseau SMB
 try {
@@ -95,37 +102,43 @@ try {
     if ($LASTEXITCODE -ne 0) {
         cmd.exe /c "net share AssistantIAExcel=`"$targetDir`"" 2>$null | Out-Null
     }
-    Write-Host "      Partage SMB prepare : $uncPath" -ForegroundColor Green
 } catch {}
 
-# Enregistrement OBLIGATOIRE du Catalogue Approuve dans HKCU (ne necessite aucun droit administrateur)
-try {
-    $regCatalog = "HKCU:\Software\Microsoft\Office\16.0\WEF\TrustedCatalogs\$catalogGuid"
-    New-Item -Path $regCatalog -Force | Out-Null
-    Set-ItemProperty -Path $regCatalog -Name "Id" -Value $catalogGuid -Type String
-    Set-ItemProperty -Path $regCatalog -Name "Url" -Value $uncPath -Type String
-    Set-ItemProperty -Path $regCatalog -Name "Flags" -Value 1 -Type DWord
-    Write-Host "      Catalogue de confiance WEF enregistre ($uncPath)." -ForegroundColor Green
-} catch {
-    Write-Host "      [i] Inscription catalogue WEF locale." -ForegroundColor Gray
+# Inscription des 4 formats de catalog dans HKCU (ne necessite aucun droit administrateur)
+$catalogs = @(
+    @{ Guid = $catalogGuid1; Url = $uncPath },
+    @{ Guid = $catalogGuid2; Url = $uncLocalhost },
+    @{ Guid = $catalogGuid3; Url = $fileUri },
+    @{ Guid = $catalogGuid4; Url = $directPath }
+)
+
+foreach ($cat in $catalogs) {
+    try {
+        $regPath = "HKCU:\Software\Microsoft\Office\16.0\WEF\TrustedCatalogs\$($cat.Guid)"
+        if (-not (Test-Path $regPath)) { New-Item -Path $regPath -Force | Out-Null }
+        Set-ItemProperty -Path $regPath -Name "Id" -Value $cat.Guid -Type String
+        Set-ItemProperty -Path $regPath -Name "Url" -Value $cat.Url -Type String
+        Set-ItemProperty -Path $regPath -Name "Flags" -Value 1 -Type DWord
+    } catch {}
 }
 
-# 5. Enregistrement direct Developer dans le Registre Office (fonctionne sans admin)
-Write-Host "[3/5] Enregistrement dans Microsoft Office..." -ForegroundColor Green
+# Enregistrement direct Developer pour sideloading sans reseau
 $regDev = "HKCU:\Software\Microsoft\Office\16.0\WEF\Developer"
-New-Item -Path $regDev -Force | Out-Null
+if (-not (Test-Path $regDev)) { New-Item -Path $regDev -Force | Out-Null }
 Set-ItemProperty -Path $regDev -Name $addinGuid -Value $manifestPath -Type String
-Write-Host "      Cle Developer enregistree ($addinGuid)." -ForegroundColor Green
+Set-ItemProperty -Path $regDev -Name "{$addinGuid}" -Value $manifestPath -Type String
+Set-ItemProperty -Path $regDev -Name "AssistantIAExcel" -Value $manifestPath -Type String
+Write-Host "      Enregistrement registre effectue avec succes." -ForegroundColor Green
 
-# 6. Nettoyage du cache WEF d'Office
-Write-Host "[4/5] Rafraichissement du cache Office..." -ForegroundColor Green
-$wefCache = "$env:LOCALAPPDATA\Microsoft\Office\16.0\Wef"
-if (Test-Path $wefCache) {
-    Remove-Item "$wefCache\*" -Recurse -Force -ErrorAction SilentlyContinue
+# 6. Rafraichissement securise des caches Office
+Write-Host "[4/5] Optimisation des caches Office..." -ForegroundColor Green
+$cacheAggregated = "$env:LOCALAPPDATA\Microsoft\Office\16.0\Wef\AggregatedCache"
+if (Test-Path $cacheAggregated) {
+    Remove-Item "$cacheAggregated\*" -Recurse -Force -ErrorAction SilentlyContinue
 }
 
-# 7. Creation du classeur d'activation automatique sur le Bureau
-Write-Host "[5/5] Creation du classeur d'activation sur le Bureau..." -ForegroundColor Green
+# 7. Creation du classeur d'accueil et d'activation sur le Bureau
+Write-Host "[5/5] Creation du classeur d'accueil sur le Bureau..." -ForegroundColor Green
 $desktopPath = [Environment]::GetFolderPath("Desktop")
 $workbookPath = Join-Path $desktopPath "AssistantIA_AfriExcel.xlsx"
 
@@ -150,8 +163,6 @@ function Create-ActivationWorkbook($path) {
   <Default Extension="xml" ContentType="application/xml"/>
   <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
   <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
-  <Override PartName="/xl/webextensions/taskpanes.xml" ContentType="application/vnd.ms-office.webextensiontaskpanes+xml"/>
-  <Override PartName="/xl/webextensions/webextension1.xml" ContentType="application/vnd.ms-office.webextension+xml"/>
 </Types>
 '@
 
@@ -159,7 +170,6 @@ function Create-ActivationWorkbook($path) {
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
-  <Relationship Id="rId2" Type="http://schemas.microsoft.com/office/2011/relationships/webextensiontaskpanes" Target="xl/webextensions/taskpanes.xml"/>
 </Relationships>
 '@
 
@@ -181,70 +191,49 @@ function Create-ActivationWorkbook($path) {
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
   <sheetData>
-    <row r="1"><c r="A1" t="inlineStr"><is><t>AfriExcel Copilot - Business Plan OHADA &amp; Finance</t></is></c></row>
-    <row r="2"><c r="A2" t="inlineStr"><is><t>L'Assistant IA s'ouvre automatiquement dans le volet a droite.</t></is></c></row>
+    <row r="1"><c r="A1" t="inlineStr"><is><t>AFRIEXCEL COPILOT - BUSINESS PLAN BANCAIRE SYSCOHADA (20 FEUILLES)</t></is></c></row>
+    <row r="3"><c r="A3" t="inlineStr"><is><t>POUR OUVRIR LE VOLET DE L'ASSISTANT IA DANS CE CLASSEUR :</t></is></c></row>
+    <row r="5"><c r="A5" t="inlineStr"><is><t>1. Cliquez sur le menu "Insertion" tout en haut dans votre ruban Excel.</t></is></c></row>
+    <row r="6"><c r="A6" t="inlineStr"><is><t>2. Cliquez sur "Mes compléments" (ou l'icône Compléments).</t></is></c></row>
+    <row r="7"><c r="A7" t="inlineStr"><is><t>3. Allez dans l'onglet "DOSSIER PARTAGÉ".</t></is></c></row>
+    <row r="8"><c r="A8" t="inlineStr"><is><t>4. Sélectionnez "AfriExcel Copilot - Business Plan OHADA" puis cliquez sur "Ajouter".</t></is></c></row>
+    <row r="10"><c r="A10" t="inlineStr"><is><t>✓ Le volet de l'Assistant IA s'affiche immédiatement à droite !</t></is></c></row>
+    <row r="11"><c r="A11" t="inlineStr"><is><t>✓ Le bouton "Copilote OHADA" restera ensuite fixé pour toujours dans votre onglet Accueil !</t></is></c></row>
   </sheetData>
 </worksheet>
 '@
 
-    Write-ZipEntry $zip "xl/webextensions/taskpanes.xml" @'
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<wetp:taskpanes xmlns:wetp="http://schemas.microsoft.com/office/webextensions/taskpanes/2010/11">
-  <wetp:taskpane dockstate="right" visibility="1" width="380" row="1" locked="0">
-    <wetp:webextensionref xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="rId1"/>
-  </wetp:taskpane>
-</wetp:taskpanes>
-'@
-
-    Write-ZipEntry $zip "xl/webextensions/_rels/taskpanes.xml.rels" @'
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.microsoft.com/office/2011/relationships/webextension" Target="webextension1.xml"/>
-</Relationships>
-'@
-
-    $weXml = @"
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<we:webextension xmlns:we="http://schemas.microsoft.com/office/webextensions/webextension/2010/11" id="$catalogGuid">
-  <we:reference id="$addinGuid" version="2.0.0.0" store="$uncPath" storeType="FileSystem"/>
-  <we:alternateReferences>
-    <we:reference id="$addinGuid" version="2.0.0.0" store="$uncPath" storeType="FileSystem"/>
-  </we:alternateReferences>
-  <we:properties>
-    <we:property name="Office.AutoShowTaskpaneWithDocument" value="true"/>
-  </we:properties>
-  <we:bindings/>
-  <we:snapshot/>
-</we:webextension>
-"@
-    Write-ZipEntry $zip "xl/webextensions/webextension1.xml" $weXml
     $zip.Dispose()
 }
 
 try {
     Create-ActivationWorkbook $workbookPath
-    Write-Host "      Classeur direct pret sur le Bureau : AssistantIA_AfriExcel.xlsx" -ForegroundColor Green
-} catch {
-    Write-Host "      [i] Creation du classeur d'activation optionnel ignoree." -ForegroundColor Gray
-}
+    Write-Host "      Classeur pret sur le Bureau : AssistantIA_AfriExcel.xlsx" -ForegroundColor Green
+} catch {}
 
-# 8. Notification Excel
+# 8. Notification & Lancement Excel
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "    INSTALLATION REUSSIE AVEC SUCCES !" -ForegroundColor Green
+Write-Host "     INSTALLATION CONFIGUREE AVEC SUCCES DANS EXCEL !       " -ForegroundColor Green
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "Vous pouvez desormais utiliser l'Assistant IA :" -ForegroundColor White
-Write-Host "  1. Ouvrez Microsoft Excel." -ForegroundColor White
-Write-Host "  2. Un bouton 'Copilote OHADA' est present dans l'onglet 'Accueil' du ruban." -ForegroundColor White
-Write-Host "  3. Ou double-cliquez directement sur 'AssistantIA_AfriExcel.xlsx' sur votre Bureau." -ForegroundColor White
+Write-Host "Excel s'ouvre. Pour afficher l'Assistant IA a droite :" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "  1. Cliquez sur l'onglet 'Insertion' en haut de votre ruban." -ForegroundColor White
+Write-Host "  2. Cliquez sur 'Mes complements' (ou 'Complements')." -ForegroundColor White
+Write-Host "  3. Allez dans l'onglet 'DOSSIER PARTAGE'." -ForegroundColor White
+Write-Host "  4. Cliquez sur 'AfriExcel Copilot' puis sur 'Ajouter'." -ForegroundColor Green
+Write-Host ""
+Write-Host "  Le volet s'ouvrira aussitot et le bouton 'Copilote OHADA' sera" -ForegroundColor Cyan
+Write-Host "  present dans votre onglet Accueil pour tous vos classeurs !" -ForegroundColor Cyan
+Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host ""
 
 $excelProcesses = Get-Process excel -ErrorAction SilentlyContinue
 if ($excelProcesses) {
-    Write-Host "[!] Note : Excel etait deja ouvert. Veuillez le fermer puis le rouvrir pour actualiser le ruban." -ForegroundColor Yellow
+    Write-Host "[i] Note : Excel etait deja ouvert. Veuillez fermer et rouvrir Excel ou suivre les 4 etapes ci-dessus." -ForegroundColor Yellow
 } else {
-    Write-Host "Lancement automatique d'Excel..." -ForegroundColor Yellow
+    Write-Host "Lancement de Microsoft Excel..." -ForegroundColor Yellow
     if (Test-Path $workbookPath) {
         Start-Process $workbookPath
     } else {
@@ -252,4 +241,4 @@ if ($excelProcesses) {
     }
 }
 
-Start-Sleep -Seconds 2
+Start-Sleep -Seconds 3

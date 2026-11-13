@@ -643,12 +643,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="w-9 h-9 rounded-2xl bg-emerald-500 text-slate-950 font-black flex items-center justify-center text-sm mb-4">
               3
             </div>
-            <h4 className="font-extrabold text-white text-base">Ouvrez Microsoft Excel</h4>
+            <h4 className="font-extrabold text-white text-base">Activez dans Excel (2 clics)</h4>
             <p className="text-xs text-slate-300 mt-2 leading-relaxed">
-              Lancez Excel : le bouton <strong>« Copilote OHADA »</strong> apparaît dans l'onglet <strong>Accueil</strong> du ruban. Un classeur d'activation est aussi déposé sur votre Bureau !
+              Dans Excel, allez dans <strong>Insertion &gt; Mes compléments &gt; Dossier partagé</strong>, sélectionnez <strong>AfriExcel Copilot</strong> et cliquez sur <strong>Ajouter</strong>. Le bouton restera définitivement dans votre ruban <strong>Accueil</strong> !
             </p>
             <span className="inline-block mt-3 text-[11px] text-emerald-400 font-bold">
-              ✓ Prêt pour vos 20 feuilles SYSCOHADA
+              ✓ Volet IA actif &amp; 20 feuilles SYSCOHADA
             </span>
           </div>
         </div>
