@@ -40,12 +40,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isPaying, setIsPaying] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
-  const [installTab, setInstallTab] = useState<'modern' | 'universal' | 'cmd' | 'manual'>('modern');
+  const [installTab, setInstallTab] = useState<'modern' | 'cmd' | 'manual'>('modern');
   const [copied, setCopied] = useState(false);
 
   const COMMAND_MODERN = "irm https://raw.githubusercontent.com/ralph-pagui/afriexcel/main/addin-frontend/public/install.ps1 | iex";
-  const COMMAND_UNIVERSAL = "[Net.ServicePointManager]::SecurityProtocol = 3072 -bor 768; iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/ralph-pagui/afriexcel/main/addin-frontend/public/install.ps1'))";
-  const COMMAND_CMD = 'powershell -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = 3072 -bor 768; iex ((New-Object System.Net.WebClient).DownloadString(\'https://raw.githubusercontent.com/ralph-pagui/afriexcel/main/addin-frontend/public/install.ps1\'))"';
+  const COMMAND_CMD = 'powershell -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/ralph-pagui/afriexcel/main/addin-frontend/public/install.ps1 | iex"';
+  const COMMAND_LEGACY = "[Net.ServicePointManager]::SecurityProtocol = 3072 -bor 768; iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/ralph-pagui/afriexcel/main/addin-frontend/public/install.ps1'))";
 
   const handleCopyCommand = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -490,7 +490,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800">
               <button
                 onClick={() => setInstallTab('modern')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${
                   installTab === 'modern'
                     ? 'bg-emerald-500 text-slate-950 shadow-sm'
                     : 'text-slate-400 hover:text-white'
@@ -499,18 +499,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 PowerShell 1-Clic (Recommandé)
               </button>
               <button
-                onClick={() => setInstallTab('universal')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
-                  installTab === 'universal'
-                    ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                PowerShell Universel
-              </button>
-              <button
                 onClick={() => setInstallTab('cmd')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
                   installTab === 'cmd'
                     ? 'bg-emerald-500 text-slate-950 shadow-sm'
                     : 'text-slate-400 hover:text-white'
@@ -520,7 +510,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </button>
               <button
                 onClick={() => setInstallTab('manual')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
                   installTab === 'manual'
                     ? 'bg-emerald-500 text-slate-950 shadow-sm'
                     : 'text-slate-400 hover:text-white'
@@ -537,29 +527,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <>
                 <div className="text-xs text-slate-400 mb-3 flex items-center justify-between">
                   <span>
-                    {installTab === 'modern' && '✦ Commande recommandée ultra-rapide 1-clic pour Windows 10 & 11.'}
-                    {installTab === 'universal' && '✦ Commande universelle compatible avec tous les PC Windows et toutes les versions de PowerShell.'}
-                    {installTab === 'cmd' && '✦ À coller si vous avez ouvert l\'invite de commandes classique noire (cmd.exe).'}
+                    {installTab === 'modern' && '✦ Commande officielle ultra-rapide 1-clic pour Windows 10 & 11 (PowerShell).'}
+                    {installTab === 'cmd' && '✦ À copier-coller dans l\'invite de commandes classique noire (cmd.exe).'}
                   </span>
                 </div>
 
                 <div className="relative bg-slate-950 rounded-2xl p-4 sm:p-5 border border-slate-800/80 font-mono text-xs sm:text-sm text-slate-200 overflow-x-auto flex items-center justify-between gap-4">
                   <div className="flex items-start gap-2 select-all overflow-x-auto">
-                    <span className="text-emerald-400 select-none font-bold">PS&gt;</span>
-                    <span className="text-emerald-200 whitespace-pre-wrap break-all">
-                      {installTab === 'universal' && COMMAND_UNIVERSAL}
-                      {installTab === 'modern' && COMMAND_MODERN}
-                      {installTab === 'cmd' && COMMAND_CMD}
+                    <span className="text-emerald-400 select-none font-bold">
+                      {installTab === 'modern' ? 'PS>' : 'C:\\>'}
+                    </span>
+                    <span className="text-emerald-200 whitespace-pre-wrap break-all font-semibold">
+                      {installTab === 'modern' ? COMMAND_MODERN : COMMAND_CMD}
                     </span>
                   </div>
 
                   <button
                     onClick={() => {
-                      const text = installTab === 'universal'
-                        ? COMMAND_UNIVERSAL
-                        : installTab === 'modern'
-                        ? COMMAND_MODERN
-                        : COMMAND_CMD;
+                      const text = installTab === 'modern' ? COMMAND_MODERN : COMMAND_CMD;
                       handleCopyCommand(text);
                     }}
                     className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition active:scale-95 ${
@@ -581,6 +566,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     )}
                   </button>
                 </div>
+
+                {/* Secours pour très anciennes machines */}
+                <details className="mt-4 pt-3 border-t border-slate-800/60 text-left">
+                  <summary className="text-[11px] text-slate-400 hover:text-slate-300 cursor-pointer font-medium select-none">
+                    ✦ Vous utilisez Windows 7 ou une très ancienne version de PowerShell ? (Cliquez ici pour la commande secours)
+                  </summary>
+                  <div className="mt-2.5 p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-xs font-mono text-slate-300 flex items-center justify-between gap-3">
+                    <span className="whitespace-pre-wrap break-all select-all text-emerald-300 text-[11px]">
+                      {COMMAND_LEGACY}
+                    </span>
+                    <button
+                      onClick={() => handleCopyCommand(COMMAND_LEGACY)}
+                      className="shrink-0 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-[11px] font-bold"
+                    >
+                      Copier
+                    </button>
+                  </div>
+                </details>
               </>
             ) : (
               <div className="text-center py-4">

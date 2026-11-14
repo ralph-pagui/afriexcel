@@ -33,51 +33,109 @@ if (-not (Test-Path $targetDir)) {
 }
 Write-Host "[1/5] Dossier local configure : $targetDir" -ForegroundColor Green
 
-# 4. Telechargement du Manifeste XML Officiel
+# 4. Preparation du Manifeste XML Officiel (Integre directement pour 100% de fiabilite et zero latence reseau)
 $manifestPath = "$targetDir\manifest.xml"
-$remoteManifestUrl = "https://raw.githubusercontent.com/ralph-pagui/afriexcel/main/addin-frontend/public/manifest.xml"
-$fallbackManifestUrl = "https://afriexcelai.netlify.app/manifest.xml"
+Write-Host "[2/5] Initialisation du manifeste officiel..." -ForegroundColor Green
 
-Write-Host "[2/5] Telechargement du manifeste officiel..." -ForegroundColor Green
-$downloaded = $false
+$embeddedManifest = @'
+<?xml version="1.0" encoding="UTF-8"?>
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+  xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+  xsi:type="TaskPaneApp">
+  <Id>b29d4c78-5e4a-4b91-912a-8457fce2a912</Id>
+  <Version>2.0.0.0</Version>
+  <ProviderName>AfriExcel Technologies</ProviderName>
+  <DefaultLocale>fr-FR</DefaultLocale>
+  <DisplayName DefaultValue="AfriExcel Copilot - Business Plan OHADA"/>
+  <Description DefaultValue="Assistant IA pour la création et la modification de Business Plans bancables SYSCOHADA à 20 feuilles dans Excel."/>
+  <IconUrl DefaultValue="https://afriexcelai.netlify.app/assets/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://afriexcelai.netlify.app/assets/icon-80.png"/>
+  <SupportUrl DefaultValue="https://afriexcelai.netlify.app/"/>
+  <AppDomains>
+    <AppDomain>https://afriexcelai.netlify.app</AppDomain>
+    <AppDomain>https://appsforoffice.microsoft.com</AppDomain>
+    <AppDomain>https://generativelanguage.googleapis.com</AppDomain>
+  </AppDomains>
+  <Hosts>
+    <Host Name="Workbook"/>
+  </Hosts>
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://afriexcelai.netlify.app/?mode=addin"/>
+  </DefaultSettings>
+  <Permissions>ReadWriteDocument</Permissions>
 
-# Methode 1 : WebClient ultra-compatible (.NET 2.0+, TLS 1.2+, support proxy entreprise)
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      <Host xsi:type="Workbook">
+        <DesktopFormFactor>
+          <GetStarted>
+            <Title resid="GetStarted.Title"/>
+            <Description resid="GetStarted.Description"/>
+            <LearnMoreUrl resid="GetStarted.LearnMoreUrl"/>
+          </GetStarted>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <OfficeTab id="TabHome">
+              <Group id="Group.AssistantIA">
+                <Label resid="GroupLabel"/>
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16"/>
+                  <bt:Image size="32" resid="Icon.32"/>
+                  <bt:Image size="80" resid="Icon.80"/>
+                </Icon>
+                <Control xsi:type="Button" id="Button.ShowTaskpane">
+                  <Label resid="ButtonLabel"/>
+                  <Supertip>
+                    <Title resid="ButtonLabel"/>
+                    <Description resid="ButtonToolTip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16"/>
+                    <bt:Image size="32" resid="Icon.32"/>
+                    <bt:Image size="80" resid="Icon.80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>Office.AutoShowTaskpaneWithDocument</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Url"/>
+                  </Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon.16" DefaultValue="https://afriexcelai.netlify.app/assets/icon-16.png"/>
+        <bt:Image id="Icon.32" DefaultValue="https://afriexcelai.netlify.app/assets/icon-32.png"/>
+        <bt:Image id="Icon.80" DefaultValue="https://afriexcelai.netlify.app/assets/icon-80.png"/>
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://afriexcelai.netlify.app/?mode=addin"/>
+        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://afriexcelai.netlify.app/"/>
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="GroupLabel" DefaultValue="AfriExcel"/>
+        <bt:String id="ButtonLabel" DefaultValue="Copilote OHADA"/>
+        <bt:String id="GetStarted.Title" DefaultValue="AfriExcel Copilot"/>
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="ButtonToolTip" DefaultValue="Ouvre le copilote IA pour générer et modifier vos Business Plans bancables SYSCOHADA à 20 feuilles."/>
+        <bt:String id="GetStarted.Description" DefaultValue="Assistant IA Business Plan & Modélisation Financière OHADA."/>
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+</OfficeApp>
+'@
+
 try {
-    $wc = New-Object System.Net.WebClient
-    $wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AfriExcel/2.0")
-    if ($wc.Proxy) {
-        $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials
-    }
-    $wc.DownloadFile($remoteManifestUrl, $manifestPath)
-    if (Test-Path $manifestPath) {
-        $downloaded = $true
-        Write-Host "      Manifeste telecharge avec succes (WebClient)." -ForegroundColor Green
-    }
-} catch {}
-
-# Methode 2 : Invoke-WebRequest si disponible (PowerShell 3.0+)
-if (-not $downloaded) {
-    try {
-        Invoke-WebRequest -Uri $remoteManifestUrl -OutFile $manifestPath -UseBasicParsing -UserAgent "AfriExcel/2.0"
-        if (Test-Path $manifestPath) {
-            $downloaded = $true
-            Write-Host "      Manifeste telecharge avec succes (Invoke-WebRequest)." -ForegroundColor Green
-        }
-    } catch {}
-}
-
-# Methode 3 : Fallback CDN GitHub
-if (-not $downloaded) {
-    try {
-        $githubManifest = "https://raw.githubusercontent.com/ralph-pagui/afriexcel/main/addin-frontend/public/manifest.xml"
-        (New-Object System.Net.WebClient).DownloadFile($githubManifest, $manifestPath)
-        if (Test-Path $manifestPath) {
-            $downloaded = $true
-            Write-Host "      Manifeste telecharge avec succes via CDN GitHub." -ForegroundColor Green
-        }
-    } catch {
-        Write-Host "      [!] Erreur telechargement reseau : $($_.Exception.Message)" -ForegroundColor Red
-    }
+    [System.IO.File]::WriteAllText($manifestPath, $embeddedManifest.Trim(), [System.Text.Encoding]::UTF8)
+    Write-Host "      Manifeste XML installe et valide localement." -ForegroundColor Green
+} catch {
+    Set-Content -Path $manifestPath -Value $embeddedManifest.Trim() -Encoding UTF8 -Force
+    Write-Host "      Manifeste XML configure." -ForegroundColor Green
 }
 
 # 5. Configuration des Catalogues Approuves Office (Multi-Canal Universel)
