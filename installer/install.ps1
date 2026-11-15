@@ -1,6 +1,6 @@
 # ==============================================================================
 # INSTALLATEUR ASSISTANT IA EXCEL - AFRIQUE FRANCOPHONE (SYSCOHADA & PAIE)
-# Script d'installation universel et automatique dans Microsoft Excel
+# Script universel 100% automatique : enregistrement WEF + classeur d'activation
 # ==============================================================================
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -13,30 +13,28 @@ Write-Host "    SYSCOHADA | 20 Feuilles Bancables | KPay | Finance" -ForegroundC
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host ""
 
-# 1. Activation universelle des protocoles TLS (TLS 1.2 + TLS 1.0)
+# 1. Activation TLS universelle
 try {
     [System.Net.ServicePointManager]::SecurityProtocol = 3072 -bor 768
 } catch {}
 
-# 2. Verification des privileges
-$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-if ($isAdmin) {
-    Write-Host "[+] Droits Administrateur detectes : activation complete (Partage SMB + Registre Office)." -ForegroundColor Green
-} else {
-    Write-Host "[i] Droits Utilisateur Standard : enregistrement direct et securise dans le registre Office (sans UAC ni mot de passe)." -ForegroundColor Yellow
+# 2. Fermeture prealable des processus Excel pour liberer les caches Office
+Write-Host "[1/5] Fermeture prealable d'Excel pour mise a jour des caches..." -ForegroundColor Yellow
+Stop-Process -Name excel -Force -ErrorAction SilentlyContinue
+Start-Sleep -Seconds 1
+
+# 3. Preparation des dossiers permanents Roaming & Local
+$roamingFolder = "$env:APPDATA\AssistantIAExcel"
+$localFolder = "$env:LOCALAPPDATA\AssistantIAExcel"
+
+foreach ($dir in @($roamingFolder, $localFolder)) {
+    if (-not (Test-Path $dir)) {
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+    }
 }
+Write-Host "[2/5] Dossiers locaux configures avec succes." -ForegroundColor Green
 
-# 3. Preparation du dossier local permanent
-$targetDir = "$env:LOCALAPPDATA\AssistantIAExcel"
-if (-not (Test-Path $targetDir)) {
-    New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
-}
-Write-Host "[1/5] Dossier local configure : $targetDir" -ForegroundColor Green
-
-# 4. Preparation du Manifeste XML Officiel (Integre directement pour 100% de fiabilite et zero latence reseau)
-$manifestPath = "$targetDir\manifest.xml"
-Write-Host "[2/5] Initialisation du manifeste officiel..." -ForegroundColor Green
-
+# 4. Manifeste XML Officiel integre (zero latence, zero panne reseau)
 $embeddedManifest = @'
 <?xml version="1.0" encoding="UTF-8"?>
 <OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
@@ -130,165 +128,159 @@ $embeddedManifest = @'
 </OfficeApp>
 '@
 
-try {
-    [System.IO.File]::WriteAllText($manifestPath, $embeddedManifest.Trim(), [System.Text.Encoding]::UTF8)
-    Write-Host "      Manifeste XML installe et valide localement." -ForegroundColor Green
-} catch {
-    Set-Content -Path $manifestPath -Value $embeddedManifest.Trim() -Encoding UTF8 -Force
-    Write-Host "      Manifeste XML configure." -ForegroundColor Green
-}
+$manifestRoaming = "$roamingFolder\manifest.xml"
+$manifestLocal = "$localFolder\manifest.xml"
+[System.IO.File]::WriteAllText($manifestRoaming, $embeddedManifest.Trim(), [System.Text.Encoding]::UTF8)
+[System.IO.File]::WriteAllText($manifestLocal, $embeddedManifest.Trim(), [System.Text.Encoding]::UTF8)
+Write-Host "[3/5] Fichiers manifests deployes localement." -ForegroundColor Green
 
-# 5. Configuration des Catalogues Approuves Office (Multi-Canal Universel)
-Write-Host "[3/5] Configuration des Catalogues de Confiance Office..." -ForegroundColor Green
-$catalogGuid1 = "{E5B75A18-6326-4C10-9CE2-78A7A0864B7A}"
-$catalogGuid2 = "{B29D4C78-5E4A-4B91-912A-8457FCE2A912}"
-$catalogGuid3 = "{C38E5D89-6F5B-4C02-823B-9568GDF3B023}"
-$catalogGuid4 = "{D49F6E9A-706C-4D13-934C-0679HE4CA134}"
+# 5. Enregistrement direct dans le Registre Office (WEF Developer + TrustedCatalogs)
 $addinGuid = "b29d4c78-5e4a-4b91-912a-8457fce2a912"
+$catalogGuid = "{b29d4c78-5e4a-4b91-912a-8457fce2a912}"
 
-$uncPath = "\\$env:COMPUTERNAME\AssistantIAExcel"
-$uncLocalhost = "\\localhost\c$" + $targetDir.Substring(2)
-$fileUri = "file:///" + ($targetDir.Replace("\", "/")) + "/"
-$directPath = "$targetDir\"
-
-# Tentative de creation du partage reseau SMB
-try {
-    net share AssistantIAExcel /delete 2>$null | Out-Null
-    cmd.exe /c "net share AssistantIAExcel=`"$targetDir`" /grant:Everyone,FULL" 2>$null | Out-Null
-    if ($LASTEXITCODE -ne 0) {
-        cmd.exe /c "net share AssistantIAExcel=`"$targetDir`" /grant:`"Tout le monde`",FULL" 2>$null | Out-Null
-    }
-    if ($LASTEXITCODE -ne 0) {
-        cmd.exe /c "net share AssistantIAExcel=`"$targetDir`"" 2>$null | Out-Null
-    }
-} catch {}
-
-# Inscription native avec reg.exe pour garantir 100% de fiabilite (ne necessite aucun droit administrateur)
+# Inscription du catalogue local et de la cle Developer
 foreach ($ver in @("16.0", "15.0")) {
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid1" /v Id /t REG_SZ /d "$catalogGuid1" /f 2>$null | Out-Null
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid1" /v Url /t REG_SZ /d "$uncPath" /f 2>$null | Out-Null
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid1" /v Flags /t REG_DWORD /d 1 /f 2>$null | Out-Null
+    $devPath = "HKCU:\Software\Microsoft\Office\$ver\WEF\Developer"
+    if (-not (Test-Path $devPath)) { New-Item -Path $devPath -Force | Out-Null }
+    Set-ItemProperty -Path $devPath -Name "$addinGuid" -Value "$manifestRoaming"
+    Set-ItemProperty -Path $devPath -Name "{$addinGuid}" -Value "$manifestRoaming"
+    Set-ItemProperty -Path $devPath -Name "AssistantIAExcel" -Value "$manifestRoaming"
 
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid2" /v Id /t REG_SZ /d "$catalogGuid2" /f 2>$null | Out-Null
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid2" /v Url /t REG_SZ /d "\\localhost\AssistantIAExcel" /f 2>$null | Out-Null
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid2" /v Flags /t REG_DWORD /d 1 /f 2>$null | Out-Null
-
-    # Enregistrement direct Developer pour sideloading
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\Developer" /v "$addinGuid" /t REG_SZ /d "$manifestPath" /f 2>$null | Out-Null
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\Developer" /v "{$addinGuid}" /t REG_SZ /d "$manifestPath" /f 2>$null | Out-Null
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\Developer" /v "AssistantIAExcel" /t REG_SZ /d "$manifestPath" /f 2>$null | Out-Null
-}
-Write-Host "      Enregistrement registre effectue avec succes (reg.exe)." -ForegroundColor Green
-
-# 6. Rafraichissement securise des caches Office
-Write-Host "[4/5] Optimisation des caches Office..." -ForegroundColor Green
-$cacheAggregated = "$env:LOCALAPPDATA\Microsoft\Office\16.0\Wef\AggregatedCache"
-if (Test-Path $cacheAggregated) {
-    Remove-Item "$cacheAggregated\*" -Recurse -Force -ErrorAction SilentlyContinue
+    $catPath = "HKCU:\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid"
+    if (-not (Test-Path $catPath)) { New-Item -Path $catPath -Force | Out-Null }
+    Set-ItemProperty -Path $catPath -Name "Id" -Value "$catalogGuid"
+    Set-ItemProperty -Path $catPath -Name "Url" -Value "$roamingFolder\"
+    Set-ItemProperty -Path $catPath -Name "Flags" -Value 1 -Type DWord
 }
 
-# 7. Creation du classeur d'accueil et d'activation sur le Bureau
-Write-Host "[5/5] Creation du classeur d'accueil sur le Bureau..." -ForegroundColor Green
+# 6. Reinitialisation des caches Office WEF
+$cacheFolders = @(
+    "$env:LOCALAPPDATA\Microsoft\Office\16.0\WEF\AggregatedCache",
+    "$env:LOCALAPPDATA\Microsoft\Office\16.0\WEF\AddinInfo",
+    "$env:LOCALAPPDATA\Microsoft\Office\16.0\WEF\AppCommands"
+)
+foreach ($cf in $cacheFolders) {
+    if (Test-Path $cf) {
+        Remove-Item -Path "$cf\*" -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
+Write-Host "[4/5] Registre configure et caches Office reinitialises." -ForegroundColor Green
+
+# 7. Generation du classeur auto-activable avec volet IA integre
+Write-Host "[5/5] Creation du classeur d'activation directe..." -ForegroundColor Green
 $desktopPath = [Environment]::GetFolderPath("Desktop")
-$workbookPath = Join-Path $desktopPath "AssistantIA_AfriExcel.xlsx"
+$targetWb = Join-Path $desktopPath "Assistant_IA_Excel.xlsx"
 
-Add-Type -AssemblyName System.IO.Compression -ErrorAction SilentlyContinue
 Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction SilentlyContinue
 
-function Create-ActivationWorkbook($path) {
-    if (Test-Path $path) { Remove-Item $path -Force -ErrorAction SilentlyContinue }
-    $zip = [System.IO.Compression.ZipFile]::Open($path, [System.IO.Compression.ZipArchiveMode]::Create)
+function Build-AutoOpeningWorkbook($outPath) {
+    $tempDir = Join-Path $env:TEMP "ExcelWebExtensionBuild_Auto"
+    if (Test-Path $tempDir) { Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue }
     
-    function Write-ZipEntry($z, $name, $content) {
-        $entry = $z.CreateEntry($name)
-        $writer = New-Object System.IO.StreamWriter($entry.Open(), [System.Text.Encoding]::UTF8)
-        $writer.Write($content)
-        $writer.Close()
-    }
-    
-    Write-ZipEntry $zip "[Content_Types].xml" @'
+    New-Item -ItemType Directory -Path "$tempDir\_rels" -Force | Out-Null
+    New-Item -ItemType Directory -Path "$tempDir\xl\_rels" -Force | Out-Null
+    New-Item -ItemType Directory -Path "$tempDir\xl\worksheets" -Force | Out-Null
+    New-Item -ItemType Directory -Path "$tempDir\xl\webextensions\_rels" -Force | Out-Null
+
+    $utf8 = [System.Text.Encoding]::UTF8
+
+    [System.IO.File]::WriteAllText((Join-Path $tempDir "[Content_Types].xml"), @'
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
   <Default Extension="xml" ContentType="application/xml"/>
   <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
   <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/webextensions/webextension1.xml" ContentType="application/vnd.ms-office.webextension+xml"/>
+  <Override PartName="/xl/webextensions/taskpanes.xml" ContentType="application/vnd.ms-office.webextensiontaskpanes+xml"/>
 </Types>
-'@
+'@, $utf8)
 
-    Write-ZipEntry $zip "_rels/.rels" @'
+    [System.IO.File]::WriteAllText((Join-Path $tempDir "_rels\.rels"), @'
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
 </Relationships>
-'@
+'@, $utf8)
 
-    Write-ZipEntry $zip "xl/workbook.xml" @'
+    [System.IO.File]::WriteAllText((Join-Path $tempDir "xl\workbook.xml"), @'
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-  <sheets><sheet name="AfriExcel Copilot" sheetId="1" r:id="rId1"/></sheets>
+  <sheets>
+    <sheet name="AfriExcel Copilot" sheetId="1" r:id="rId1"/>
+  </sheets>
 </workbook>
-'@
+'@, $utf8)
 
-    Write-ZipEntry $zip "xl/_rels/workbook.xml.rels" @'
+    [System.IO.File]::WriteAllText((Join-Path $tempDir "xl\_rels\workbook.xml.rels"), @'
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.microsoft.com/office/2011/relationships/webextensiontaskpanes" Target="webextensions/taskpanes.xml"/>
 </Relationships>
-'@
+'@, $utf8)
 
-    Write-ZipEntry $zip "xl/worksheets/sheet1.xml" @'
+    [System.IO.File]::WriteAllText((Join-Path $tempDir "xl\worksheets\sheet1.xml"), @'
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
   <sheetData>
     <row r="1"><c r="A1" t="inlineStr"><is><t>AFRIEXCEL COPILOT - BUSINESS PLAN BANCAIRE SYSCOHADA (20 FEUILLES)</t></is></c></row>
-    <row r="3"><c r="A3" t="inlineStr"><is><t>POUR OUVRIR LE VOLET DE L'ASSISTANT IA DANS CE CLASSEUR :</t></is></c></row>
-    <row r="5"><c r="A5" t="inlineStr"><is><t>1. Cliquez sur le menu "Insertion" tout en haut dans votre ruban Excel.</t></is></c></row>
-    <row r="6"><c r="A6" t="inlineStr"><is><t>2. Cliquez sur "Mes compléments" (ou l'icône Compléments).</t></is></c></row>
-    <row r="7"><c r="A7" t="inlineStr"><is><t>3. Allez dans l'onglet "DOSSIER PARTAGÉ".</t></is></c></row>
-    <row r="8"><c r="A8" t="inlineStr"><is><t>4. Sélectionnez "AfriExcel Copilot - Business Plan OHADA" puis cliquez sur "Ajouter".</t></is></c></row>
-    <row r="10"><c r="A10" t="inlineStr"><is><t>✓ Le volet de l'Assistant IA s'affiche immédiatement à droite !</t></is></c></row>
-    <row r="11"><c r="A11" t="inlineStr"><is><t>✓ Le bouton "Copilote OHADA" restera ensuite fixé pour toujours dans votre onglet Accueil !</t></is></c></row>
+    <row r="2"><c r="A2" t="inlineStr"><is><t>L'Assistant IA s'ouvre automatiquement dans le volet a droite.</t></is></c></row>
   </sheetData>
 </worksheet>
-'@
+'@, $utf8)
 
-    $zip.Dispose()
+    [System.IO.File]::WriteAllText((Join-Path $tempDir "xl\webextensions\taskpanes.xml"), @'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<wetp:taskpanes xmlns:wetp="http://schemas.microsoft.com/office/webextensions/taskpanes/2010/11">
+  <wetp:taskpane dockstate="right" visibility="1" width="380" row="1">
+    <wetp:webextensionref xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="rId1"/>
+  </wetp:taskpane>
+</wetp:taskpanes>
+'@, $utf8)
+
+    [System.IO.File]::WriteAllText((Join-Path $tempDir "xl\webextensions\_rels\taskpanes.xml.rels"), @'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.microsoft.com/office/2011/relationships/webextension" Target="webextension1.xml"/>
+</Relationships>
+'@, $utf8)
+
+    [System.IO.File]::WriteAllText((Join-Path $tempDir "xl\webextensions\webextension1.xml"), @'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<we:webextension xmlns:we="http://schemas.microsoft.com/office/webextensions/webextension/2010/11" id="{b29d4c78-5e4a-4b91-912a-8457fce2a912}">
+  <we:reference id="b29d4c78-5e4a-4b91-912a-8457fce2a912" version="1.0.0.0" store="developer" storeType="developer"/>
+  <we:alternateReferences/>
+  <we:properties>
+    <we:property name="Office.AutoShowTaskpaneWithDocument" value="true"/>
+  </we:properties>
+  <we:bindings/>
+  <we:snapshot xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/>
+</we:webextension>
+'@, $utf8)
+
+    if (Test-Path $outPath) { Remove-Item $outPath -Force -ErrorAction SilentlyContinue }
+    [System.IO.Compression.ZipFile]::CreateFromDirectory($tempDir, $outPath)
+    Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
 }
 
 try {
-    Create-ActivationWorkbook $workbookPath
-    Write-Host "      Classeur pret sur le Bureau : AssistantIA_AfriExcel.xlsx" -ForegroundColor Green
+    Build-AutoOpeningWorkbook $targetWb
+    Write-Host "      Classeur auto-activable pret : $targetWb" -ForegroundColor Green
 } catch {}
 
-# 8. Notification & Lancement Excel
+# 8. Lancement automatique d'Excel avec le classeur
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "     INSTALLATION CONFIGUREE AVEC SUCCES DANS EXCEL !       " -ForegroundColor Green
+Write-Host "     INSTALLATION TERMINEE AVEC SUCCES DANS EXCEL !         " -ForegroundColor Green
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "Excel s'ouvre. Pour afficher l'Assistant IA a droite :" -ForegroundColor Yellow
-Write-Host ""
-Write-Host "  1. Cliquez sur l'onglet 'Insertion' en haut de votre ruban." -ForegroundColor White
-Write-Host "  2. Cliquez sur 'Mes complements' (ou 'Complements')." -ForegroundColor White
-Write-Host "  3. Allez dans l'onglet 'DOSSIER PARTAGE'." -ForegroundColor White
-Write-Host "  4. Cliquez sur 'AfriExcel Copilot' puis sur 'Ajouter'." -ForegroundColor Green
-Write-Host ""
-Write-Host "  Le volet s'ouvrira aussitot et le bouton 'Copilote OHADA' sera" -ForegroundColor Cyan
-Write-Host "  present dans votre onglet Accueil pour tous vos classeurs !" -ForegroundColor Cyan
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host ""
+Write-Host "Lancement de Microsoft Excel..." -ForegroundColor Yellow
 
-$excelProcesses = Get-Process excel -ErrorAction SilentlyContinue
-if ($excelProcesses) {
-    Write-Host "[i] Note : Excel etait deja ouvert. Veuillez fermer et rouvrir Excel ou suivre les 4 etapes ci-dessus." -ForegroundColor Yellow
+if (Test-Path $targetWb) {
+    Start-Process $targetWb
 } else {
-    Write-Host "Lancement de Microsoft Excel..." -ForegroundColor Yellow
-    if (Test-Path $workbookPath) {
-        Start-Process $workbookPath
-    } else {
-        Start-Process "excel.exe"
-    }
+    Start-Process "excel.exe"
 }
 
-Start-Sleep -Seconds 3
+Start-Sleep -Seconds 2

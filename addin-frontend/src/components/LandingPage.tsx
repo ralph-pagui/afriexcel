@@ -646,9 +646,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="w-9 h-9 rounded-2xl bg-emerald-500 text-slate-950 font-black flex items-center justify-center text-sm mb-4">
               3
             </div>
-            <h4 className="font-extrabold text-white text-base">Activez dans Excel (2 clics)</h4>
+            <h4 className="font-extrabold text-white text-base">Ouverture Immédiate d'Excel</h4>
             <p className="text-xs text-slate-300 mt-2 leading-relaxed">
-              Dans Excel, allez dans <strong>Insertion &gt; Mes compléments &gt; Dossier partagé</strong>, sélectionnez <strong>AfriExcel Copilot</strong> et cliquez sur <strong>Ajouter</strong>. Le bouton restera définitivement dans votre ruban <strong>Accueil</strong> !
+              Excel s'ouvre automatiquement avec le classeur <strong>Assistant_IA_Excel.xlsx</strong> et le volet de l'Assistant IA s'affiche immédiatement à droite ! Vous pouvez aussi retrouver l'add-in dans <strong>Insertion &gt; Mes compléments</strong>.
             </p>
             <span className="inline-block mt-3 text-[11px] text-emerald-400 font-bold">
               ✓ Volet IA actif &amp; 20 feuilles SYSCOHADA
