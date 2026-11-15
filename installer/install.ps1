@@ -163,31 +163,22 @@ try {
     }
 } catch {}
 
-# Inscription des 4 formats de catalog dans HKCU (ne necessite aucun droit administrateur)
-$catalogs = @(
-    @{ Guid = $catalogGuid1; Url = $uncPath },
-    @{ Guid = $catalogGuid2; Url = $uncLocalhost },
-    @{ Guid = $catalogGuid3; Url = $fileUri },
-    @{ Guid = $catalogGuid4; Url = $directPath }
-)
+# Inscription native avec reg.exe pour garantir 100% de fiabilite (ne necessite aucun droit administrateur)
+foreach ($ver in @("16.0", "15.0")) {
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid1" /v Id /t REG_SZ /d "$catalogGuid1" /f 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid1" /v Url /t REG_SZ /d "$uncPath" /f 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid1" /v Flags /t REG_DWORD /d 1 /f 2>$null | Out-Null
 
-foreach ($cat in $catalogs) {
-    try {
-        $regPath = "HKCU:\Software\Microsoft\Office\16.0\WEF\TrustedCatalogs\$($cat.Guid)"
-        if (-not (Test-Path $regPath)) { New-Item -Path $regPath -Force | Out-Null }
-        Set-ItemProperty -Path $regPath -Name "Id" -Value $cat.Guid -Type String
-        Set-ItemProperty -Path $regPath -Name "Url" -Value $cat.Url -Type String
-        Set-ItemProperty -Path $regPath -Name "Flags" -Value 1 -Type DWord
-    } catch {}
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid2" /v Id /t REG_SZ /d "$catalogGuid2" /f 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid2" /v Url /t REG_SZ /d "\\localhost\AssistantIAExcel" /f 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid2" /v Flags /t REG_DWORD /d 1 /f 2>$null | Out-Null
+
+    # Enregistrement direct Developer pour sideloading
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\Developer" /v "$addinGuid" /t REG_SZ /d "$manifestPath" /f 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\Developer" /v "{$addinGuid}" /t REG_SZ /d "$manifestPath" /f 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\Developer" /v "AssistantIAExcel" /t REG_SZ /d "$manifestPath" /f 2>$null | Out-Null
 }
-
-# Enregistrement direct Developer pour sideloading sans reseau
-$regDev = "HKCU:\Software\Microsoft\Office\16.0\WEF\Developer"
-if (-not (Test-Path $regDev)) { New-Item -Path $regDev -Force | Out-Null }
-Set-ItemProperty -Path $regDev -Name $addinGuid -Value $manifestPath -Type String
-Set-ItemProperty -Path $regDev -Name "{$addinGuid}" -Value $manifestPath -Type String
-Set-ItemProperty -Path $regDev -Name "AssistantIAExcel" -Value $manifestPath -Type String
-Write-Host "      Enregistrement registre effectue avec succes." -ForegroundColor Green
+Write-Host "      Enregistrement registre effectue avec succes (reg.exe)." -ForegroundColor Green
 
 # 6. Rafraichissement securise des caches Office
 Write-Host "[4/5] Optimisation des caches Office..." -ForegroundColor Green
