@@ -43,7 +43,7 @@ $embeddedManifest = @'
   xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
   xsi:type="TaskPaneApp">
   <Id>b29d4c78-5e4a-4b91-912a-8457fce2a912</Id>
-  <Version>2.0.0.0</Version>
+  <Version>1.0.0.0</Version>
   <ProviderName>AfriExcel Technologies</ProviderName>
   <DefaultLocale>fr-FR</DefaultLocale>
   <DisplayName DefaultValue="AfriExcel Copilot - Business Plan OHADA"/>
@@ -130,29 +130,45 @@ $embeddedManifest = @'
 
 $manifestRoaming = "$roamingFolder\manifest.xml"
 $manifestLocal = "$localFolder\manifest.xml"
-[System.IO.File]::WriteAllText($manifestRoaming, $embeddedManifest.Trim(), [System.Text.Encoding]::UTF8)
-[System.IO.File]::WriteAllText($manifestLocal, $embeddedManifest.Trim(), [System.Text.Encoding]::UTF8)
-Write-Host "[3/5] Fichiers manifests deployes localement." -ForegroundColor Green
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText($manifestRoaming, $embeddedManifest.Trim(), $utf8NoBom)
+[System.IO.File]::WriteAllText($manifestLocal, $embeddedManifest.Trim(), $utf8NoBom)
+Write-Host "[3/5] Fichiers manifests deployes localement (0 BOM)." -ForegroundColor Green
 
-# 5. Enregistrement direct dans le Registre Office (WEF Developer + TrustedCatalogs UNC)
+# 5. Creation ou verification du partage reseau SMB local (non-bloquant)
+try {
+    cmd.exe /c "net share AssistantIAExcel=`"$localFolder`" /grant:Everyone,FULL" 2>$null | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        cmd.exe /c "net share AssistantIAExcel=`"$localFolder`" /grant:`"Tout le monde`",FULL" 2>$null | Out-Null
+    }
+} catch {}
+
+# 6. Enregistrement direct dans le Registre Office (WEF Developer + TrustedCatalogs)
 $addinGuid = "b29d4c78-5e4a-4b91-912a-8457fce2a912"
 $catalogGuid = "{b29d4c78-5e4a-4b91-912a-8457fce2a912}"
 $catalogGuid2 = "{E5B75A18-6326-4C10-9CE2-78A7A0864B7A}"
+$catalogGuid3 = "{A1B2C3D4-E5F6-4A5B-8C9D-0E1F2A3B4C5D}"
 $uncPath = "\\$env:COMPUTERNAME\AssistantIAExcel"
 
-# Configuration native des catalogues UNC (indispensable pour l'affichage de l'onglet Dossier partagé)
 foreach ($ver in @("16.0", "15.0")) {
     & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\Developer" /v "$addinGuid" /t REG_SZ /d "$manifestRoaming" /f 2>$null | Out-Null
     & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\Developer" /v "{$addinGuid}" /t REG_SZ /d "$manifestRoaming" /f 2>$null | Out-Null
     & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\Developer" /v "AssistantIAExcel" /t REG_SZ /d "$manifestRoaming" /f 2>$null | Out-Null
 
+    # Catalogue 1 : Dossier Roaming direct (sans admin)
     & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid" /v Id /t REG_SZ /d "$catalogGuid" /f 2>$null | Out-Null
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid" /v Url /t REG_SZ /d "\\localhost\AssistantIAExcel" /f 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid" /v Url /t REG_SZ /d "$roamingFolder\" /f 2>$null | Out-Null
     & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid" /v Flags /t REG_DWORD /d 1 /f 2>$null | Out-Null
 
+    # Catalogue 2 : Localhost UNC
     & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid2" /v Id /t REG_SZ /d "$catalogGuid2" /f 2>$null | Out-Null
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid2" /v Url /t REG_SZ /d "$uncPath" /f 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid2" /v Url /t REG_SZ /d "\\localhost\AssistantIAExcel" /f 2>$null | Out-Null
     & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid2" /v Flags /t REG_DWORD /d 1 /f 2>$null | Out-Null
+
+    # Catalogue 3 : Partage UNC Reseau Machine
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid3" /v Id /t REG_SZ /d "$catalogGuid3" /f 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid3" /v Url /t REG_SZ /d "$uncPath" /f 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid3" /v Flags /t REG_DWORD /d 1 /f 2>$null | Out-Null
 }
 
 # 6. Reinitialisation des caches Office WEF
@@ -269,6 +285,8 @@ function Build-AutoOpeningWorkbook($outPath) {
 
 try {
     Build-AutoOpeningWorkbook $targetWb
+    $altWb = Join-Path $desktopPath "AssistantIA_AfriExcel.xlsx"
+    Build-AutoOpeningWorkbook $altWb
     Write-Host "      Classeur auto-activable pret : $targetWb" -ForegroundColor Green
 } catch {}
 
