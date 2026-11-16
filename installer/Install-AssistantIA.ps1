@@ -135,15 +135,7 @@ $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 [System.IO.File]::WriteAllText($manifestLocal, $embeddedManifest.Trim(), $utf8NoBom)
 Write-Host "[3/5] Fichiers manifests deployes localement (0 BOM)." -ForegroundColor Green
 
-# 5. Creation ou verification du partage reseau SMB local (non-bloquant)
-try {
-    cmd.exe /c "net share AssistantIAExcel=`"$localFolder`" /grant:Everyone,FULL" 2>$null | Out-Null
-    if ($LASTEXITCODE -ne 0) {
-        cmd.exe /c "net share AssistantIAExcel=`"$localFolder`" /grant:`"Tout le monde`",FULL" 2>$null | Out-Null
-    }
-} catch {}
-
-# 6. Enregistrement direct dans le Registre Office (WEF Developer + TrustedCatalogs)
+# 5. Enregistrement direct dans le Registre Office (WEF Developer + TrustedCatalogs)
 $addinGuid = "b29d4c78-5e4a-4b91-912a-8457fce2a912"
 $catalogGuid = "{b29d4c78-5e4a-4b91-912a-8457fce2a912}"
 $catalogGuid2 = "{E5B75A18-6326-4C10-9CE2-78A7A0864B7A}"
@@ -151,24 +143,24 @@ $catalogGuid3 = "{A1B2C3D4-E5F6-4A5B-8C9D-0E1F2A3B4C5D}"
 $uncPath = "\\$env:COMPUTERNAME\AssistantIAExcel"
 
 foreach ($ver in @("16.0", "15.0")) {
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\Developer" /v "$addinGuid" /t REG_SZ /d "$manifestRoaming" /f 2>$null | Out-Null
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\Developer" /v "{$addinGuid}" /t REG_SZ /d "$manifestRoaming" /f 2>$null | Out-Null
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\Developer" /v "AssistantIAExcel" /t REG_SZ /d "$manifestRoaming" /f 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\Developer" /f /v "$addinGuid" /t REG_SZ /d "$manifestRoaming" 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\Developer" /f /v "{$addinGuid}" /t REG_SZ /d "$manifestRoaming" 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\Developer" /f /v "AssistantIAExcel" /t REG_SZ /d "$manifestRoaming" 2>$null | Out-Null
 
     # Catalogue 1 : Dossier Roaming direct (sans admin)
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid" /v Id /t REG_SZ /d "$catalogGuid" /f 2>$null | Out-Null
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid" /v Url /t REG_SZ /d "$roamingFolder\" /f 2>$null | Out-Null
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid" /v Flags /t REG_DWORD /d 1 /f 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid" /f /v Id /t REG_SZ /d "$catalogGuid" 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid" /f /v Url /t REG_SZ /d "$roamingFolder\\" 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid" /f /v Flags /t REG_DWORD /d 1 2>$null | Out-Null
 
     # Catalogue 2 : Localhost UNC
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid2" /v Id /t REG_SZ /d "$catalogGuid2" /f 2>$null | Out-Null
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid2" /v Url /t REG_SZ /d "\\localhost\AssistantIAExcel" /f 2>$null | Out-Null
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid2" /v Flags /t REG_DWORD /d 1 /f 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid2" /f /v Id /t REG_SZ /d "$catalogGuid2" 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid2" /f /v Url /t REG_SZ /d "\\localhost\AssistantIAExcel" 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid2" /f /v Flags /t REG_DWORD /d 1 2>$null | Out-Null
 
     # Catalogue 3 : Partage UNC Reseau Machine
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid3" /v Id /t REG_SZ /d "$catalogGuid3" /f 2>$null | Out-Null
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid3" /v Url /t REG_SZ /d "$uncPath" /f 2>$null | Out-Null
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid3" /v Flags /t REG_DWORD /d 1 /f 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid3" /f /v Id /t REG_SZ /d "$catalogGuid3" 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid3" /f /v Url /t REG_SZ /d "$uncPath" 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid3" /f /v Flags /t REG_DWORD /d 1 2>$null | Out-Null
 }
 
 # 6. Reinitialisation des caches Office WEF
