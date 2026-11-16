@@ -134,23 +134,25 @@ $manifestLocal = "$localFolder\manifest.xml"
 [System.IO.File]::WriteAllText($manifestLocal, $embeddedManifest.Trim(), [System.Text.Encoding]::UTF8)
 Write-Host "[3/5] Fichiers manifests deployes localement." -ForegroundColor Green
 
-# 5. Enregistrement direct dans le Registre Office (WEF Developer + TrustedCatalogs)
+# 5. Enregistrement direct dans le Registre Office (WEF Developer + TrustedCatalogs UNC)
 $addinGuid = "b29d4c78-5e4a-4b91-912a-8457fce2a912"
 $catalogGuid = "{b29d4c78-5e4a-4b91-912a-8457fce2a912}"
+$catalogGuid2 = "{E5B75A18-6326-4C10-9CE2-78A7A0864B7A}"
+$uncPath = "\\$env:COMPUTERNAME\AssistantIAExcel"
 
-# Inscription du catalogue local et de la cle Developer
+# Configuration native des catalogues UNC (indispensable pour l'affichage de l'onglet Dossier partagé)
 foreach ($ver in @("16.0", "15.0")) {
-    $devPath = "HKCU:\Software\Microsoft\Office\$ver\WEF\Developer"
-    if (-not (Test-Path $devPath)) { New-Item -Path $devPath -Force | Out-Null }
-    Set-ItemProperty -Path $devPath -Name "$addinGuid" -Value "$manifestRoaming"
-    Set-ItemProperty -Path $devPath -Name "{$addinGuid}" -Value "$manifestRoaming"
-    Set-ItemProperty -Path $devPath -Name "AssistantIAExcel" -Value "$manifestRoaming"
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\Developer" /v "$addinGuid" /t REG_SZ /d "$manifestRoaming" /f 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\Developer" /v "{$addinGuid}" /t REG_SZ /d "$manifestRoaming" /f 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\Developer" /v "AssistantIAExcel" /t REG_SZ /d "$manifestRoaming" /f 2>$null | Out-Null
 
-    $catPath = "HKCU:\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid"
-    if (-not (Test-Path $catPath)) { New-Item -Path $catPath -Force | Out-Null }
-    Set-ItemProperty -Path $catPath -Name "Id" -Value "$catalogGuid"
-    Set-ItemProperty -Path $catPath -Name "Url" -Value "$roamingFolder\"
-    Set-ItemProperty -Path $catPath -Name "Flags" -Value 1 -Type DWord
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid" /v Id /t REG_SZ /d "$catalogGuid" /f 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid" /v Url /t REG_SZ /d "\\localhost\AssistantIAExcel" /f 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid" /v Flags /t REG_DWORD /d 1 /f 2>$null | Out-Null
+
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid2" /v Id /t REG_SZ /d "$catalogGuid2" /f 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid2" /v Url /t REG_SZ /d "$uncPath" /f 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid2" /v Flags /t REG_DWORD /d 1 /f 2>$null | Out-Null
 }
 
 # 6. Reinitialisation des caches Office WEF
@@ -182,7 +184,8 @@ function Build-AutoOpeningWorkbook($outPath) {
     New-Item -ItemType Directory -Path "$tempDir\xl\worksheets" -Force | Out-Null
     New-Item -ItemType Directory -Path "$tempDir\xl\webextensions\_rels" -Force | Out-Null
 
-    $utf8 = [System.Text.Encoding]::UTF8
+    # UTF-8 pur sans aucun BOM (indispensable pour la conformité OpenXML et la reconnaissance par Excel)
+    $utf8 = New-Object System.Text.UTF8Encoding($false)
 
     [System.IO.File]::WriteAllText((Join-Path $tempDir "[Content_Types].xml"), @'
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
