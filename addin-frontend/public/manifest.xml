@@ -83,7 +83,7 @@
       </bt:ShortStrings>
       <bt:LongStrings>
         <bt:String id="ButtonToolTip" DefaultValue="Ouvre le copilote IA pour générer et modifier vos Business Plans bancables SYSCOHADA à 20 feuilles."/>
-        <bt:String id="GetStarted.Description" DefaultValue="Assistant IA Business Plan & Modélisation Financière OHADA."/>
+        <bt:String id="GetStarted.Description" DefaultValue="Assistant IA Business Plan et Modélisation Financière OHADA."/>
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>

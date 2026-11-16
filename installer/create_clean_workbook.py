@@ -51,11 +51,17 @@ def create_workbook(output_path):
   <Relationship Id="rId1" Type="http://schemas.microsoft.com/office/2011/relationships/webextension" Target="webextension1.xml"/>
 </Relationships>'''
 
-    addin_guid = "b29d4c78-5e4a-4b91-912a-8457fce2a912"
+    comp = os.environ.get('COMPUTERNAME', 'localhost')
+    unc_path = f'\\\\{comp}\\AssistantIAExcel'
+    catalog_guid = '{E5B75A18-6326-4C10-9CE2-78A7A0864B7A}'
+    addin_guid = 'b29d4c78-5e4a-4b91-912a-8457fce2a912'
+
     webextension_xml = f'''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<we:webextension xmlns:we="http://schemas.microsoft.com/office/webextensions/webextension/2010/11" id="{{{addin_guid}}}">
-  <we:reference id="{addin_guid}" version="1.0.0.0" store="developer" storeType="developer"/>
-  <we:alternateReferences/>
+<we:webextension xmlns:we="http://schemas.microsoft.com/office/webextensions/webextension/2010/11" id="{catalog_guid}">
+  <we:reference id="{addin_guid}" version="2.0.0.0" store="{unc_path}" storeType="FileSystem"/>
+  <we:alternateReferences>
+    <we:reference id="{addin_guid}" version="2.0.0.0" store="developer" storeType="developer"/>
+  </we:alternateReferences>
   <we:properties>
     <we:property name="Office.AutoShowTaskpaneWithDocument" value="true"/>
   </we:properties>

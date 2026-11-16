@@ -43,7 +43,7 @@ $embeddedManifest = @'
   xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
   xsi:type="TaskPaneApp">
   <Id>b29d4c78-5e4a-4b91-912a-8457fce2a912</Id>
-  <Version>1.0.0.0</Version>
+  <Version>2.0.0.0</Version>
   <ProviderName>AfriExcel Technologies</ProviderName>
   <DefaultLocale>fr-FR</DefaultLocale>
   <DisplayName DefaultValue="AfriExcel Copilot - Business Plan OHADA"/>
@@ -121,7 +121,7 @@ $embeddedManifest = @'
       </bt:ShortStrings>
       <bt:LongStrings>
         <bt:String id="ButtonToolTip" DefaultValue="Ouvre le copilote IA pour générer et modifier vos Business Plans bancables SYSCOHADA à 20 feuilles."/>
-        <bt:String id="GetStarted.Description" DefaultValue="Assistant IA Business Plan & Modélisation Financière OHADA."/>
+        <bt:String id="GetStarted.Description" DefaultValue="Assistant IA Business Plan et Modélisation Financière OHADA."/>
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>
@@ -137,30 +137,24 @@ Write-Host "[3/5] Fichiers manifests deployes localement (0 BOM)." -ForegroundCo
 
 # 5. Enregistrement direct dans le Registre Office (WEF Developer + TrustedCatalogs)
 $addinGuid = "b29d4c78-5e4a-4b91-912a-8457fce2a912"
-$catalogGuid = "{b29d4c78-5e4a-4b91-912a-8457fce2a912}"
-$catalogGuid2 = "{E5B75A18-6326-4C10-9CE2-78A7A0864B7A}"
-$catalogGuid3 = "{A1B2C3D4-E5F6-4A5B-8C9D-0E1F2A3B4C5D}"
+$catalogGuid = "{E5B75A18-6326-4C10-9CE2-78A7A0864B7A}"
 $uncPath = "\\$env:COMPUTERNAME\AssistantIAExcel"
 
 foreach ($ver in @("16.0", "15.0")) {
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\Developer" /f /v "$addinGuid" /t REG_SZ /d "$manifestRoaming" 2>$null | Out-Null
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\Developer" /f /v "{$addinGuid}" /t REG_SZ /d "$manifestRoaming" 2>$null | Out-Null
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\Developer" /f /v "AssistantIAExcel" /t REG_SZ /d "$manifestRoaming" 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\Developer" /f /v "$addinGuid" /t REG_SZ /d "$manifestLocal" 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\Developer" /f /v "{$addinGuid}" /t REG_SZ /d "$manifestLocal" 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\Developer" /f /v "AssistantIAExcel" /t REG_SZ /d "$manifestLocal" 2>$null | Out-Null
 
-    # Catalogue 1 : Dossier Roaming direct (sans admin)
+    # Catalogue 1 : Partage UNC Reseau Machine (Affiche DOSSIER PARTAGE dans Excel)
     & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid" /f /v Id /t REG_SZ /d "$catalogGuid" 2>$null | Out-Null
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid" /f /v Url /t REG_SZ /d "$roamingFolder\\" 2>$null | Out-Null
+    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid" /f /v Url /t REG_SZ /d "$uncPath" 2>$null | Out-Null
     & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid" /f /v Flags /t REG_DWORD /d 1 2>$null | Out-Null
 
     # Catalogue 2 : Localhost UNC
+    $catalogGuid2 = "{B29D4C78-5E4A-4B91-912A-8457FCE2A912}"
     & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid2" /f /v Id /t REG_SZ /d "$catalogGuid2" 2>$null | Out-Null
     & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid2" /f /v Url /t REG_SZ /d "\\localhost\AssistantIAExcel" 2>$null | Out-Null
     & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid2" /f /v Flags /t REG_DWORD /d 1 2>$null | Out-Null
-
-    # Catalogue 3 : Partage UNC Reseau Machine
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid3" /f /v Id /t REG_SZ /d "$catalogGuid3" 2>$null | Out-Null
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid3" /f /v Url /t REG_SZ /d "$uncPath" 2>$null | Out-Null
-    & reg.exe add "HKCU\Software\Microsoft\Office\$ver\WEF\TrustedCatalogs\$catalogGuid3" /f /v Flags /t REG_DWORD /d 1 2>$null | Out-Null
 }
 
 # 6. Reinitialisation des caches Office WEF
@@ -257,18 +251,20 @@ function Build-AutoOpeningWorkbook($outPath) {
 </Relationships>
 '@, $utf8)
 
-    [System.IO.File]::WriteAllText((Join-Path $tempDir "xl\webextensions\webextension1.xml"), @'
+    [System.IO.File]::WriteAllText((Join-Path $tempDir "xl\webextensions\webextension1.xml"), @"
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<we:webextension xmlns:we="http://schemas.microsoft.com/office/webextensions/webextension/2010/11" id="{b29d4c78-5e4a-4b91-912a-8457fce2a912}">
-  <we:reference id="b29d4c78-5e4a-4b91-912a-8457fce2a912" version="1.0.0.0" store="developer" storeType="developer"/>
-  <we:alternateReferences/>
+<we:webextension xmlns:we="http://schemas.microsoft.com/office/webextensions/webextension/2010/11" id="$catalogGuid">
+  <we:reference id="$addinGuid" version="2.0.0.0" store="$uncPath" storeType="FileSystem"/>
+  <we:alternateReferences>
+    <we:reference id="$addinGuid" version="2.0.0.0" store="developer" storeType="developer"/>
+  </we:alternateReferences>
   <we:properties>
     <we:property name="Office.AutoShowTaskpaneWithDocument" value="true"/>
   </we:properties>
   <we:bindings/>
   <we:snapshot xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/>
 </we:webextension>
-'@, $utf8)
+"@, $utf8)
 
     if (Test-Path $outPath) { Remove-Item $outPath -Force -ErrorAction SilentlyContinue }
     [System.IO.Compression.ZipFile]::CreateFromDirectory($tempDir, $outPath)
