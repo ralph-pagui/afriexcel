@@ -18,10 +18,16 @@ try {
     [System.Net.ServicePointManager]::SecurityProtocol = 3072 -bor 768
 } catch {}
 
-# 2. Fermeture prealable des processus Excel pour liberer les caches Office
-Write-Host "[1/5] Fermeture prealable d'Excel pour mise a jour des caches..." -ForegroundColor Yellow
-Stop-Process -Name excel -Force -ErrorAction SilentlyContinue
-Start-Sleep -Seconds 1
+# 2. Fermeture propre des processus Excel pour liberer les caches Office
+$excelProc = Get-Process excel -ErrorAction SilentlyContinue
+if ($excelProc) {
+    Write-Host "[1/5] Fermeture propre d'Excel..." -ForegroundColor Yellow
+    $excelProc | ForEach-Object { $_.CloseMainWindow() } | Out-Null
+    Start-Sleep -Seconds 1
+    Get-Process excel -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+} else {
+    Write-Host "[1/5] Verification des processus Office..." -ForegroundColor Green
+}
 
 # 3. Preparation des dossiers permanents Roaming & Local
 $roamingFolder = "$env:APPDATA\AssistantIAExcel"
