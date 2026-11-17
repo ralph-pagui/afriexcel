@@ -68,14 +68,20 @@ export class PythonBackendService {
     template_id?: string;
     isModification?: boolean;
     previousTopic?: string;
+    equityRatio?: number;
+    loanRatio?: number;
+    loanInterestRate?: number;
+    loanDurationYears?: number;
+    sectorId?: string;
   }): Promise<PythonPlanResponse | null> {
-    const candidateUrls = [PRIMARY_URL, LOCAL_URL];
+    // Priorité au serveur local (instantané pour l'utilisateur sur son poste), repli sur Render
+    const candidateUrls = [LOCAL_URL, PRIMARY_URL];
 
     for (const url of candidateUrls) {
       try {
         const controller = new AbortController();
-        // 60s pour permettre le démarrage à froid de Render et la modélisation complète
-        const timeoutId = setTimeout(() => controller.abort(), 60000);
+        const timeoutMs = url === LOCAL_URL ? 8000 : 60000;
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
         const res = await fetch(`${url}/api/generate-business-plan`, {
           method: "POST",
@@ -90,7 +96,12 @@ export class PythonBackendService {
             horizon_years: params.horizonYears,
             template_id: params.template_id || "auto",
             is_modification: params.isModification || false,
-            previous_topic: params.previousTopic
+            previous_topic: params.previousTopic,
+            equity_ratio: params.equityRatio,
+            loan_ratio: params.loanRatio,
+            loan_interest_rate: params.loanInterestRate,
+            loan_duration_years: params.loanDurationYears,
+            sector_id: params.sectorId
           }),
           signal: controller.signal
         });

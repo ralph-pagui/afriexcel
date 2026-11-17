@@ -362,8 +362,8 @@ ${userPrompt}`;
       lowerPrompt.includes('créer un business') ||
       lowerPrompt.includes('monter un business');
 
-    const isBpModification = isBpActive && (
-      /(?:modifi|chang|ajust|adapt|passer|pass|met|mets|mettre|augment|recalcul|diminu|fixe|corrige|nouveau|nouvel)/i.test(lowerPrompt) &&
+    const isBpModification = !isBpCreation && isBpActive && (
+      /(?:modifi|chang|ajust|adapt|passer|pass|met|mets|mettre|augment|recalcul|diminu|fixe|corrige)/i.test(lowerPrompt) &&
       (/(?:investissement|budget|capital|apport|emprunt|crédit|dette|chiffre d'affaires|ca\b|prix|volume|salaire|personnel|horizon|durée|ans?\b|bfr|frais|dépense|projet|plan)/i.test(lowerPrompt) ||
        /\b\d+\s*(?:millions?|m|fcfa)\b/i.test(lowerPrompt))
     );

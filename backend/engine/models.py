@@ -12,6 +12,12 @@ class PlanRequest(BaseModel):
     template_id: Optional[str] = Field("auto", description="Identifiant du template de design (ex: 'emerald_africa', 'sahara_commerce', 'royal_navy', 'cyber_indigo')")
     is_modification: Optional[bool] = Field(False, description="Indique s'il s'agit d'une mise à jour chirurgicale d'un plan existant")
     previous_topic: Optional[str] = Field(None, description="Sujet ou secteur du projet précédent lors d'une modification")
+    equity_ratio: Optional[float] = Field(None, description="Part d'apport personnel promoteur (ex: 0.30 pour 30%)")
+    loan_ratio: Optional[float] = Field(None, description="Part d'emprunt bancaire (ex: 0.70 pour 70%)")
+    loan_interest_rate: Optional[float] = Field(None, description="Taux d'intérêt annuel de l'emprunt (ex: 0.12 pour 12%)")
+    loan_duration_years: Optional[int] = Field(None, description="Durée de remboursement de l'emprunt en années (ex: 5)")
+    discount_rate: Optional[float] = Field(0.10, description="Taux d'actualisation pour calcul de la VAN (ex: 0.10)")
+    sector_id: Optional[str] = Field(None, description="Identifiant sectoriel forcé ou extrait")
 
 class ProductItem(BaseModel):
     id: int
@@ -47,14 +53,22 @@ class SectorProfile(BaseModel):
 class KPIOverview(BaseModel):
     total_investment: float
     equity_promoter: float
+    equity_pct: float = 30.0
     bank_loan: float
+    loan_pct: float = 70.0
+    loan_interest_rate: float = 12.0
     revenue_year1: float
+    revenue_year5: float = 0.0
     ebitda_year1: float  # EBE
     net_profit_year1: float
+    net_profit_year5: float = 0.0
     breakeven_revenue: float
     breakeven_days: int
     irr_pct: str  # TRI
-    npv: float  # VAN à 10%
+    irr_value: float = 0.0
+    npv: float  # VAN
+    profitability_index: float = 0.0
+    dscr_avg: float = 0.0
     payback_period: str
     jobs_created: int
 

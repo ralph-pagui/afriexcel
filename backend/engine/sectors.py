@@ -394,91 +394,151 @@ SECTOR_CATALOG: Dict[str, SectorProfile] = {
             StaffItem(title="Gérant(e) Responsable de Boutique & Achats", count=1, monthly_net=220000, monthly_cnps=36000),
             StaffItem(title="Vendeuse-Conseil & Accueil Enfants", count=1, monthly_net=120000, monthly_cnps=20000)
         ]
+    ),
+
+    # 13. TRANSPORT URBAIN, LOGISTIQUE & LIVRAISON FRIGORIFIQUE
+    "transport": SectorProfile(
+        sector_id="transport",
+        name="Transport & Logistique de Distribution Frigorifique",
+        activity="Services de transport routier de marchandises, messagerie urbaine et logistique sous température dirigée",
+        unit="Course / Tonnage transporté",
+        base_daily_volume=35,
+        working_days_per_year=312,
+        raw_materials_desc="Carburant gasoil en gros, lubrifiants certifiés, pièces de rechange d'origine et consommables d'arrimage",
+        products=[
+            ProductItem(id=1, name="Transport frigorifique sous température dirigée", description="Livraison de denrées périssables, viandes, volailles et produits laitiers", share_pct=0.50, unit_price=25000),
+            ProductItem(id=2, name="Messagerie urbaine & courses express B2B", description="Livraison rapide de colis et marchandises pour entreprises et commerces", share_pct=0.30, unit_price=10000),
+            ProductItem(id=3, name="Location de camionnettes avec chauffeur", description="Mise à disposition journalière pour déménagements et transferts de stocks", share_pct=0.20, unit_price=50000)
+        ],
+        equipment=[
+            EquipmentItem(name="2 Véhicules utilitaires frigorifiques isothermes récents", cost=18000000, duration_years=5, depreciation_rate=0.20),
+            EquipmentItem(name="Véhicule fourgon tôlé 3.5 tonnes pour fret sec urbain", cost=8000000, duration_years=5, depreciation_rate=0.20),
+            EquipmentItem(name="Système de géolocalisation GPS & balises télématiques flotte", cost=1200000, duration_years=4, depreciation_rate=0.25),
+            EquipmentItem(name="Équipements de manutention (transpalettes manuels & diables)", cost=800000, duration_years=4, depreciation_rate=0.25)
+        ],
+        staff=[
+            StaffItem(title="Responsable d'Exploitation & Flotte", count=1, monthly_net=350000, monthly_cnps=56000),
+            StaffItem(title="Chauffeurs-Livreurs professionnels qualifiés", count=3, monthly_net=150000, monthly_cnps=24000),
+            StaffItem(title="Mécanicien et agent d'entretien flotte", count=1, monthly_net=130000, monthly_cnps=20000)
+        ]
+    ),
+
+    # 14. NUMÉRIQUE, LOGICIELS & SERVICES SAAS
+    "numerique_saas": SectorProfile(
+        sector_id="numerique_saas",
+        name="Entreprise de Solutions Numériques & Logiciels SaaS",
+        activity="Conception, développement et commercialisation de logiciels cloud, applications mobiles et services d'intégration digitale",
+        unit="Abonnement mensuel / Prestation",
+        base_daily_volume=20,
+        working_days_per_year=260,
+        raw_materials_desc="Hébergement serveurs cloud haute disponibilité, licences d'API et services d'authentification sécurisée",
+        products=[
+            ProductItem(id=1, name="Abonnement SaaS B2B Logiciel Métier", description="Accès mensuel par entreprise avec support technique", share_pct=0.55, unit_price=45000),
+            ProductItem(id=2, name="Développement & Intégration sur mesure", description="Projets spécifiques de transformation digitale", share_pct=0.30, unit_price=250000),
+            ProductItem(id=3, name="Maintenance, Sécurité & Support Cloud", description="Contrat annuel d'infogérance et de surveillance", share_pct=0.15, unit_price=75000)
+        ],
+        equipment=[
+            EquipmentItem(name="Postes de travail informatiques développeurs haute performance", cost=4500000, duration_years=4, depreciation_rate=0.25),
+            EquipmentItem(name="Infrastructure réseau sécurisée, switchs Cisco et routeurs pro", cost=1500000, duration_years=4, depreciation_rate=0.25),
+            EquipmentItem(name="Serveurs de test locaux, sauvegardes NAS et onduleur APC", cost=1800000, duration_years=4, depreciation_rate=0.25),
+            EquipmentItem(name="Aménagement de l'espace de coworking & mobilier ergonomique", cost=2200000, duration_years=5, depreciation_rate=0.20)
+        ],
+        staff=[
+            StaffItem(title="Lead Architecte Logiciel / CTO", count=1, monthly_net=550000, monthly_cnps=88000),
+            StaffItem(title="Ingénieurs Développeurs Fullstack", count=2, monthly_net=350000, monthly_cnps=56000),
+            StaffItem(title="Responsable Commercial & Customer Success", count=1, monthly_net=220000, monthly_cnps=35000)
+        ]
+    ),
+
+    # 15. ÉNERGIES RENOUVELABLES & SOLAIRE PHOTOVOLTAÏQUE
+    "energie_solaire": SectorProfile(
+        sector_id="energie_solaire",
+        name="Ingénierie & Distribution de Solutions Solaires Photovoltaïques",
+        activity="Dimensionnement, vente, installation et maintenance de systèmes d'énergie solaire pour habitations, fermes et industries",
+        unit="Kit solaire / Installation",
+        base_daily_volume=3,
+        working_days_per_year=280,
+        raw_materials_desc="Panneaux solaires monocristallins Tier 1, onduleurs hybrides, batteries lithium LiFePO4, câbles solaires et coffrets DC/AC",
+        products=[
+            ProductItem(id=1, name="Kit Solaire Hybride Résidentiel (3kVA - 5kVA)", description="Système complet clés en main avec batteries lithium", share_pct=0.50, unit_price=1850000),
+            ProductItem(id=2, name="Système de Pompage Solaire Agricole", description="Pompe immergée solaire pour irrigation de plantations et fermes", share_pct=0.30, unit_price=2400000),
+            ProductItem(id=3, name="Contrats d'entretien & maintenance préventive", description="Nettoyage de panneaux, vérification de connectique et monitoring", share_pct=0.20, unit_price=150000)
+        ],
+        equipment=[
+            EquipmentItem(name="Véhicule utilitaire d'intervention terrain avec galerie de portage", cost=7500000, duration_years=5, depreciation_rate=0.20),
+            EquipmentItem(name="Appareils de mesure & outillage électricien certifié (multimètres, testeurs I-V)", cost=2200000, duration_years=4, depreciation_rate=0.25),
+            EquipmentItem(name="Équipements de sécurité travail en hauteur (harnais, échelles pro)", cost=1100000, duration_years=3, depreciation_rate=0.33),
+            EquipmentItem(name="Stock initial de démonstration & showroom d'exposition", cost=3500000, duration_years=5, depreciation_rate=0.20)
+        ],
+        staff=[
+            StaffItem(title="Ingénieur Électrotechnicien / Directeur Technique", count=1, monthly_net=450000, monthly_cnps=72000),
+            StaffItem(title="Techniciens Installateurs Solaires Qualifiés", count=2, monthly_net=180000, monthly_cnps=29000),
+            StaffItem(title="Technico-Commercial Projets B2B", count=1, monthly_net=200000, monthly_cnps=32000)
+        ]
+    ),
+
+    # 16. BTP & ENTREPRISE DE CONSTRUCTION
+    "btp": SectorProfile(
+        sector_id="btp",
+        name="Entreprise de Bâtiment, Travaux Publics & Génie Civil",
+        activity="Travaux de construction de bâtiments résidentiels et commerciaux, rénovations, voiries et aménagements extérieurs",
+        unit="Prestation / Chantier m²",
+        base_daily_volume=25,
+        working_days_per_year=280,
+        raw_materials_desc="Ciment CPJ 42.5, fer à béton homologué, granulats, sable de carrière, bois de coffrage et additifs béton",
+        products=[
+            ProductItem(id=1, name="Gros œuvre & Maçonnerie générale", description="Fondations, poteaux, poutres, dalles et élévation de murs", share_pct=0.55, unit_price=85000),
+            ProductItem(id=2, name="Second œuvre (Carrelage, Peinture, Électricité)", description="Finitions soignées pour villas et immeubles", share_pct=0.30, unit_price=45000),
+            ProductItem(id=3, name="Aménagements extérieurs & Clôtures sécurisées", description="Pose de pavés autobloquants, caniveaux et clôtures", share_pct=0.15, unit_price=30000)
+        ],
+        equipment=[
+            EquipmentItem(name="2 Bétonnières thermiques 350L tractables sur roues", cost=4200000, duration_years=5, depreciation_rate=0.20),
+            EquipmentItem(name="Lot d'échafaudages métalliques tubulaires homologués (200 m²)", cost=3800000, duration_years=6, depreciation_rate=0.166),
+            EquipmentItem(name="Camion benne 5 tonnes pour transport de matériaux et déblais", cost=12000000, duration_years=5, depreciation_rate=0.20),
+            EquipmentItem(name="Vibreurs à béton, dameuses thermiques & petit outillage", cost=2000000, duration_years=3, depreciation_rate=0.33)
+        ],
+        staff=[
+            StaffItem(title="Ingénieur Conducteur de Travaux", count=1, monthly_net=480000, monthly_cnps=77000),
+            StaffItem(title="Chefs de Chantier expérimentés", count=2, monthly_net=250000, monthly_cnps=40000),
+            StaffItem(title="Maçons qualifiés & coffreurs permanents", count=3, monthly_net=140000, monthly_cnps=22000)
+        ]
+    ),
+
+    # 17. ÉDUCATION & ÉTABLISSEMENT SCOLAIRE PRIVÉ
+    "education": SectorProfile(
+        sector_id="education",
+        name="Complexe Scolaire Privé d'Enseignement Général & Technique",
+        activity="Services d'enseignement maternel, primaire, secondaire et formation professionnelle de qualité",
+        unit="Élève / Mois d'écolage",
+        base_daily_volume=350,
+        working_days_per_year=270,
+        raw_materials_desc="Manuels scolaires officiels, fournitures pédagogiques, réactifs de laboratoire sciences et consommables informatiques",
+        products=[
+            ProductItem(id=1, name="Scolarité Cycle Primaire & Maternelle", description="Enseignement fondamental bilingue et activités d'éveil", share_pct=0.45, unit_price=35000),
+            ProductItem(id=2, name="Scolarité Cycle Secondaire Collège & Lycée", description="Préparation aux examens d'État (BEPC, Baccalauréat)", share_pct=0.40, unit_price=50000),
+            ProductItem(id=3, name="Cantine scolaire, transport & activités parascolaires", description="Services annexes de confort pour les familles", share_pct=0.15, unit_price=25000)
+        ],
+        equipment=[
+            EquipmentItem(name="Mobilier scolaire complet (tables-bancs doubles, bureaux enseignants)", cost=6500000, duration_years=8, depreciation_rate=0.125),
+            EquipmentItem(name="Équipement de la salle informatique (20 ordinateurs & réseau)", cost=5500000, duration_years=4, depreciation_rate=0.25),
+            EquipmentItem(name="Matériel de laboratoire sciences & bibliothèque pédagogique", cost=2500000, duration_years=5, depreciation_rate=0.20),
+            EquipmentItem(name="Minibus de ramassage scolaire 30 places climatisé", cost=14000000, duration_years=5, depreciation_rate=0.20)
+        ],
+        staff=[
+            StaffItem(title="Directeur des Études / Proviseur", count=1, monthly_net=400000, monthly_cnps=64000),
+            StaffItem(title="Enseignants permanents qualifiés", count=6, monthly_net=180000, monthly_cnps=29000),
+            StaffItem(title="Surveillant général et personnel d'entretien", count=2, monthly_net=110000, monthly_cnps=18000)
+        ]
     )
 }
 
 def detect_sector(prompt: str) -> SectorProfile:
-    """Détecte intelligemment le profil sectoriel approprié à partir de la demande utilisateur."""
-    p = prompt.lower()
-    
-    # 1. Pharmacie & Médical
-    if any(k in p for k in ["pharmacie", "officine", "médicament", "medicament", "santé", "sante", "parapharmacie"]):
-        return SECTOR_CATALOG["pharmacie"]
-    # 2. Clinique & Cabinet de soins
-    elif any(k in p for k in ["clinique", "cabinet médical", "cabinet medical", "soins", "hôpital", "hopital", "docteur", "dispensaire"]):
-        return SECTOR_CATALOG["clinique"]
-    # 3. Quincaillerie & Matériaux
-    elif any(k in p for k in ["quincaillerie", "ciment", "fer à béton", "matériaux", "bâtiment", "quincailler"]):
-        return SECTOR_CATALOG["quincaillerie"]
-    # 4. Restauration & Traiteur
-    elif any(k in p for k in ["restaurant", "restauration", "fast food", "fast-food", "traiteur", "maquis", "grillade", "choukouya", "bar"]):
-        return SECTOR_CATALOG["restaurant"]
-    # 4b. Plantation & Culture de Cacao
-    elif ("cacao" in p or "cacaoy" in p) and any(k in p for k in ["plantation", "culture", "champ", "agricole", "exploitation", "fève", "feve", "cabosse"]):
-        return SECTOR_CATALOG["plantation_cacao"]
-    # 5. Chocolat & Transformation
-    elif any(k in p for k in ["chocolat", "cacao", "confiserie", "praline", "pâte à tartiner", "pate a tartiner"]):
-        return SECTOR_CATALOG["chocolaterie"]
-    # 6. Savonnerie & Karité
-    elif any(k in p for k in ["savon", "karité", "karite", "cosmétique", "cosmetique", "baume", "pommade"]):
-        return SECTOR_CATALOG["savonnerie"]
-    # 7. Élevage avicole
-    elif any(k in p for k in ["poulet", "volaille", "avicole", "poussin", "œuf", "oeuf", "ferme avicole"]):
-        return SECTOR_CATALOG["aviculture"]
-    # 8. Pisciculture
-    elif any(k in p for k in ["poisson", "pisciculture", "aquaculture", "tilapia", "silure", "alevin"]):
-        return SECTOR_CATALOG["pisciculture"]
-    # 9. Boulangerie
-    elif any(k in p for k in ["pain", "boulangerie", "pâtisserie", "patisserie", "viennoiserie", "croissant"]):
-        return SECTOR_CATALOG["boulangerie"]
-    # 10. Jus de fruits
-    elif any(k in p for k in ["jus", "fruit", "ananas", "mangue", "gingembre", "bissap", "boisson"]):
-        return SECTOR_CATALOG["jus"]
-    # 11. Textile & Mode
-    elif any(k in p for k in ["textile", "couture", "vêtement", "vetement", "wax", "dan fani", "mode", "confection"]):
-        return SECTOR_CATALOG["textile"]
-    # 12. Magasin de Jouets & Articles Enfants
-    elif any(k in p for k in ["jouet", "jouets", "ludique", "ludo", "peluche", "poupée", "poupee"]):
-        return SECTOR_CATALOG["magasin_jouets"]
-    
-    # 13. Profil dynamique par défaut (adapté au mot clé avec nettoyage chirurgical)
-    import re
-    clean_p = prompt.strip()
-    clean_p = re.sub(r'^(?:je\s+veux|je\s+souhaite|fais[- ]moi|peux[- ]tu\s+faire|cr[ée]e[- ]moi|g[ée]n[èe]re[- ]moi|donne[- ]moi|il\s+me\s+faut)\s+', '', clean_p, flags=re.I)
-    clean_p = re.sub(r'^(?:un|le|mon|du)?\s*(?:business\s*plan|plan\s*d[\'’]affaires?|projet)\s+(?:complet|bancable|d[ée]taill[ée])?\s*', '', clean_p, flags=re.I)
-    clean_p = re.sub(r'^(?:pour|sur|concernant)\s+', '', clean_p, flags=re.I)
-    clean_p = re.sub(r'^(?:mon|ma|mes|notre|nos|un|une|des|le|la|les)\s+', '', clean_p, flags=re.I)
-    clean_p = re.sub(r'\s+(?:sur\s+\d+\s*ans?|avec\s+(?:un\s+)?budget|\s*avec\s+\d+|j[\'’]ai\s+|\bà\s+[A-Za-zÀ-ÿ]+|\ben\s+[A-Za-zÀ-ÿ]+|\bau\s+[A-Za-zÀ-ÿ]+).*$', '', clean_p, flags=re.I)
-    clean_title = clean_p.strip(' ,;.')
-    if clean_title:
-        clean_title = clean_title[0].upper() + clean_title[1:]
-    else:
-        clean_title = "Entreprise Commerciale & Prestation"
+    """Détecte avec rigueur mathématique et sémantique le secteur d'activité adéquat."""
+    from .prompt_parser import PromptParser
+    parsed = PromptParser.parse(prompt)
+    sec_id = parsed.get("sector_id", "aviculture")
+    if sec_id in SECTOR_CATALOG:
+        return SECTOR_CATALOG[sec_id]
 
-    return SectorProfile(
-        sector_id="entreprise_generale",
-        name=f"Projet - {clean_title}",
-        activity=f"Exploitation et développement d'activité commerciale et de services : {clean_title}",
-        unit="Prestation / Article",
-        base_daily_volume=80,
-        working_days_per_year=300,
-        raw_materials_desc="Approvisionnements spécifiques, consommables d'exploitation et fournitures professionnelles",
-        products=[
-            ProductItem(id=1, name="Offre Principale Standard", description="Prestation ou produit phare de référence", share_pct=0.55, unit_price=5000),
-            ProductItem(id=2, name="Offre Supérieure Premium", description="Option à haute valeur ajoutée avec service client dédié", share_pct=0.30, unit_price=12000),
-            ProductItem(id=3, name="Services Complémentaires & Accessoires", description="Produits dérivés et prestations annexes", share_pct=0.15, unit_price=3500)
-        ],
-        equipment=[
-            EquipmentItem(name="Aménagement du local d'exploitation & enseigne lumineuse", cost=6000000, duration_years=8, depreciation_rate=0.125),
-            EquipmentItem(name="Équipements métiers spécifiques & outillage professionnel", cost=8500000, duration_years=5, depreciation_rate=0.20),
-            EquipmentItem(name="Matériel informatique, caisse tactile et logiciel de gestion", cost=2500000, duration_years=4, depreciation_rate=0.25),
-            EquipmentItem(name="Véhicule utilitaire de livraison ou d'intervention terrain", cost=6500000, duration_years=4, depreciation_rate=0.25),
-            EquipmentItem(name="Groupe électrogène de secours et onduleur", cost=3000000, duration_years=5, depreciation_rate=0.20)
-        ],
-        staff=[
-            StaffItem(title="Directeur / Gérant d'Entreprise", count=1, monthly_net=450000, monthly_cnps=75000),
-            StaffItem(title="Technicien spécialisé / Responsable des opérations", count=2, monthly_net=200000, monthly_cnps=34000),
-            StaffItem(title="Commercial / Vendeur qualifié", count=1, monthly_net=150000, monthly_cnps=25000),
-            StaffItem(title="Assistant(e) administratif(ve) et caisse", count=1, monthly_net=120000, monthly_cnps=20000)
-        ]
-    )
+    # Repli propre sur aviculture si prompt agricole/aviculture
+    return SECTOR_CATALOG.get(sec_id, SECTOR_CATALOG["aviculture"])

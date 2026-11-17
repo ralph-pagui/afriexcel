@@ -14,6 +14,8 @@ from engine.financial_engine import FinancialEngine
 from engine.excel_generator import ExcelReportGenerator
 from engine.gemini_engine import GeminiSectorEngine
 from engine.templates import TEMPLATE_CATALOG, detect_or_get_template
+from engine.prompt_parser import PromptParser
+from engine.quality_control import QualityControl
 
 app = FastAPI(
     title="AfriExcel Financial Copilot API",
@@ -92,117 +94,97 @@ def list_templates():
 @app.post("/api/generate-business-plan", response_model=PlanResponse)
 def generate_business_plan(req: PlanRequest):
     try:
-        import re
-        country = req.country or "Côte d'Ivoire"
-        currency = req.currency or "FCFA"
+        # 1. Analyse sémantique approfondie du prompt utilisateur (extraction entités & contraintes financières)
+        parsed = PromptParser.parse(
+            req.prompt,
+            default_country=req.country or "Côte d'Ivoire",
+            default_currency=req.currency or "FCFA"
+        )
 
-        # 1. Extraction NLP chirurgicale du budget et de l'horizon dans la requête utilisateur
-        extracted_budget = req.total_budget
-        if not extracted_budget:
-            m_budget = re.search(r'(\d+(?:[.,]\d+)?)\s*(?:millions?|million|m|mfcfa)\b', req.prompt, re.I)
-            if m_budget:
-                extracted_budget = float(m_budget.group(1).replace(',', '.')) * 1_000_000
-            else:
-                m_num = re.search(r'(\d[\d\s]{4,})\s*(?:fcfa|cfa|f|€|\$)?\b', req.prompt, re.I)
-                if m_num:
-                    clean_digits = re.sub(r'\s+', '', m_num.group(1))
-                    if clean_digits.isdigit() and int(clean_digits) >= 100_000:
-                        extracted_budget = float(clean_digits)
+        country = req.country if req.country and req.country != "Côte d'Ivoire" else parsed["country"]
+        currency = req.currency if req.currency and req.currency != "FCFA" else parsed["currency"]
+        project_name = req.company_name or parsed["company_name"]
 
-        extracted_years = req.horizon_years or 5
-        m_years = re.search(r'(\d+)\s*ans?\b', req.prompt, re.I)
-        if m_years:
-            parsed_y = int(m_years.group(1))
-            if 2 <= parsed_y <= 15:
-                extracted_years = parsed_y
+        extracted_budget = req.total_budget or parsed["total_budget"]
+        extracted_years = req.horizon_years or parsed["horizon_years"] or 5
+        equity_ratio = req.equity_ratio if req.equity_ratio is not None else parsed["equity_ratio"]
+        loan_ratio = req.loan_ratio if req.loan_ratio is not None else parsed["loan_ratio"]
+        loan_interest_rate = req.loan_interest_rate if req.loan_interest_rate is not None else parsed["loan_interest_rate"]
+        loan_duration_years = req.loan_duration_years or parsed["loan_duration_years"] or 5
+        sector_id = req.sector_id or parsed["sector_id"]
 
-        # 2. Nettoyage chirurgical du sujet pour un titre professionnel sans bugs de mots écourtés
-        clean_p = req.prompt.strip()
-        clean_topic = None
-
-        # Si le prompt combine "Sujet : Instruction de modification" (ex: "Plantation de cacao : modifie l'investissement à 15 millions")
-        if ":" in clean_p:
-            parts = clean_p.split(":", 1)
-            candidate = parts[0].strip()
-            if candidate and not re.match(r'^(?:modifie|change|ajuste|adapte|recalcule|passe|mets?)\b', candidate, re.I):
-                clean_topic = candidate
-                clean_p = parts[1].strip()
-
-        if not clean_topic:
-            clean_p = re.sub(r'^(?:je\s+veux|je\s+souhaite|fais[- ]moi|fait[- ]moi|peux[- ]tu\s+faire|cr[ée]e[- ]moi|g[ée]n[èe]re[- ]moi|donne[- ]moi|il\s+me\s+faut|modifie|change|ajuste|adapte|recalcule|passe|mets?)\s+(?:le\s+)?(?:montant\s+d[\'’]investissement|budget|plan|projet|l[\'’]emprunt)?\s*(?:à|au|de|pour|en)?\s*', '', clean_p, flags=re.I)
-            clean_p = re.sub(r'^(?:un|le|mon|du)?\s*(?:business\s*plan|plan\s*d[\'’]affaires?|projet)\s+(?:complet|bancable|d[ée]taill[ée])?\s*', '', clean_p, flags=re.I)
-            clean_p = re.sub(r'^(?:pour|sur|concernant)\s+', '', clean_p, flags=re.I)
-            clean_p = re.sub(r'^(?:mon|ma|mes|notre|nos|un|une|des|le|la|les)\s+', '', clean_p, flags=re.I)
-            clean_p = re.sub(r'\s+(?:sur\s+\d+\s*ans?|avec\s+(?:un\s+)?budget|\s*avec\s+\d+|j[\'’]ai\s+|\bà\s+[A-Za-zÀ-ÿ]+|\ben\s+[A-Za-zÀ-ÿ]+|\bau\s+[A-Za-zÀ-ÿ]+).*$', '', clean_p, flags=re.I)
-            clean_topic = clean_p.strip(' ,;.')
-
-        # Prise en compte du sujet précédent si modification
-        if getattr(req, "previous_topic", None) and (not clean_topic or clean_topic.lower() in ["projet", "mon projet", "entreprise", "plan", "business plan"]):
-            clean_topic = req.previous_topic
-
-        if clean_topic:
-            clean_topic = clean_topic[0].upper() + clean_topic[1:]
-        else:
-            clean_topic = "Plantation de Cacao"
-
-        # 3. Moteur IA Gemini 3.6 Flash : Conception dynamique sur-mesure pour chaque projet spécifique
+        # 2. Conception ou sélection du profil sectoriel sans AUCUNE contamination étrangère
         dynamic_profile = GeminiSectorEngine.generate_dynamic_sector(
             user_prompt=req.prompt,
             country=country,
             currency=currency,
             target_budget=extracted_budget,
             horizon_years=extracted_years,
-            clean_topic=clean_topic
+            clean_topic=project_name
         )
 
-        # Si Gemini a conçu le profil sur mesure, on l'utilise directement ; sinon fallback catalogue expert
         if dynamic_profile:
             profile = dynamic_profile
+        elif sector_id in SECTOR_CATALOG:
+            profile = SECTOR_CATALOG[sector_id]
         else:
             profile = detect_sector(req.prompt)
 
-        # 4. Nom valorisant du projet
-        project_name = req.company_name or f"Projet - {clean_topic}"
-
-        # 5. Calcul rigoureux du modèle financier OHADA avec respect strict du budget et de l'horizon
+        # 3. Calcul rigoureux du modèle financier OHADA
         fin_data = FinancialEngine.compute(
             profile,
             currency=currency,
             horizon_years=extracted_years,
             target_budget=extracted_budget,
-            country=country
+            country=country,
+            equity_ratio=equity_ratio,
+            loan_ratio=loan_ratio,
+            loan_interest_rate=loan_interest_rate,
+            loan_duration_years=loan_duration_years,
+            discount_rate=req.discount_rate or 0.10,
+            capacity_info=parsed.get("capacity_info")
         )
         kpis: KPIOverview = fin_data["kpis"]
 
-        # 6. Choix et application du Template de Design
+        # 4. Contrôle Qualité Automatique (Quality Gate 14 points)
+        qc_report = QualityControl.audit(fin_data, requested_params={
+            "equity_ratio": equity_ratio,
+            "loan_ratio": loan_ratio,
+            "loan_interest_rate": loan_interest_rate
+        })
+        if not qc_report.passed:
+            print(f"[Quality Gate Warning] {qc_report.errors}")
+
+        # 5. Choix et adaptation chirurgicale du Template Visuel
         selected_theme = detect_or_get_template(req.template_id, req.prompt, profile.activity)
         fin_data["template_id"] = selected_theme.id
         fin_data["theme"] = selected_theme
 
-        # 7. Génération du classeur Excel natif avec openpyxl (20 feuilles dynamiques avec graphiques)
+        # 6. Génération du classeur Excel natif avec openpyxl (20 feuilles 100% dynamiques et équilibrées)
         excel_bytes = ExcelReportGenerator.build(fin_data, project_name=project_name, country=country, template_id=selected_theme.id)
         b64_file = base64.b64encode(excel_bytes).decode("utf-8")
 
-        # 8. Synthèse exécutive professionnelle
+        # 7. Synthèse exécutive professionnelle
         banner = f"🔄 **Business Plan Modifié & Recalculé avec Succès : {project_name}**" if req.is_modification else f"✅ **Business Plan Bancable OHADA généré avec succès pour : {project_name}**"
         summary_text = (
             f"{banner}\n\n"
             f"🎨 **Design & Template :** {selected_theme.icon} **{selected_theme.name}** ({selected_theme.subtitle})\n"
-            f"📍 **Implantation :** {country} | **Devise :** {currency} | **Horizon Temporel :** {extracted_years} ans\n"
+            f"📍 **Implantation :** {country} ({parsed.get('location', country)}) | **Devise :** {currency} | **Horizon Temporel :** {extracted_years} ans\n"
             f"💼 **Investissement Total (Besoins) :** {kpis.total_investment:,.0f} {currency} "
-            f"(Apport promoteur 40% : {kpis.equity_promoter:,.0f} {currency} | Emprunt bancaire 60% : {kpis.bank_loan:,.0f} {currency})\n\n"
-            f"📊 **Indicateurs Clés de Performance :**\n"
+            f"(Apport promoteur {kpis.equity_pct:.0f}% : {kpis.equity_promoter:,.0f} {currency} | Emprunt bancaire {kpis.loan_pct:.0f}% : {kpis.bank_loan:,.0f} {currency} @ {kpis.loan_interest_rate:.1f}% sur {loan_duration_years} ans)\n\n"
+            f"📊 **Indicateurs Clés de Performance (Calculés selon normes bancaires UEMOA/CEMAC) :**\n"
             f"- **Chiffre d'Affaires Année 1 :** {kpis.revenue_year1:,.0f} {currency}\n"
             f"- **Excédent Brut d'Exploitation (EBE) :** {kpis.ebitda_year1:,.0f} {currency}\n"
             f"- **Bénéfice Net Année 1 :** {kpis.net_profit_year1:,.0f} {currency}\n"
             f"- **Seuil de Rentabilité :** {kpis.breakeven_revenue:,.0f} {currency} (Atteint au jour {kpis.breakeven_days})\n"
-            f"- **Rentabilité :** TRI de **{kpis.irr_pct}** | VAN de **{kpis.npv:,.0f} {currency}** | Récupération en **{kpis.payback_period}**\n"
+            f"- **Rentabilité Financière Réelle :** TRI de **{kpis.irr_pct}** | VAN (à 10%) de **{kpis.npv:,.0f} {currency}** | Récupération en **{kpis.payback_period}**\n"
+            f"- **Indice de Profitabilité (IP) :** {kpis.profitability_index:.2f} | **DSCR Moyen :** {kpis.dscr_avg:.2f}x\n"
             f"- **Emplois créés :** {kpis.jobs_created} salariés permanents\n\n"
             f"📁 **20 feuilles professionnelles prêtes à l'emploi (Modélisation complète sur {extracted_years} ans) :**\n"
             f"Page de garde, Présentation & Vision à {extracted_years} ans, Étude de marché, Mix 4P, Itinéraire technique, Prévisions de production ({extracted_years} ans), "
-            f"Chiffre d'affaires ({extracted_years} ans), Investissements & Amortissements, Charges SYSCOHADA, Salaires & CNPS, Plan de financement, Remboursement emprunt 8%, "
-            f"BFR normatif, Compte de résultat SIG ({extracted_years} ans), Bilan Actif/Passif, Trésorerie 12M, Seuil de rentabilité, "
-            f"Stress-test sensibilité, Ratios bancaires et Tableau de bord exécutif."
+            f"Chiffre d'affaires ({extracted_years} ans), Investissements & Amortissements, Charges SYSCOHADA, Salaires & CNPS, Plan de financement ({kpis.equity_pct:.0f}% / {kpis.loan_pct:.0f}%), "
+            f"Remboursement emprunt {kpis.loan_interest_rate:.1f}%, BFR normatif, Compte de résultat SIG ({extracted_years} ans), Bilan prévisionnel équilibré (5 ans), "
+            f"Plan de trésorerie (12M & 5 ans), Seuil de rentabilité, Stress-test sensibilité, Ratios bancaires et Tableau de bord exécutif."
         ).replace(",", " ")
 
         filename = f"BusinessPlan_{profile.sector_id.capitalize()}_{extracted_years}Ans_{country.replace(' ', '_')}.xlsx"

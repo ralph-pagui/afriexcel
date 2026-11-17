@@ -157,17 +157,59 @@ TEMPLATE_CATALOG: Dict[str, ThemeConfig] = {
 }
 
 def detect_or_get_template(template_id: str = None, prompt_text: str = "", activity_text: str = "") -> ThemeConfig:
-    """Retourne le template sélectionné ou le détecte intelligemment selon le secteur."""
-    if template_id and template_id in TEMPLATE_CATALOG:
-        return TEMPLATE_CATALOG[template_id]
+    """
+    Retourne le template sélectionné ou le détecte intelligemment selon le secteur
+    sans jamais imposer de textes ou de sous-titres inappropriés.
+    """
+    if template_id and template_id in TEMPLATE_CATALOG and template_id != "auto":
+        base_tpl = TEMPLATE_CATALOG[template_id]
+        return _adapt_template_text(base_tpl, prompt_text, activity_text)
+
+    # Détection sectorielle intelligente
+    from .prompt_parser import PromptParser
+    parsed = PromptParser.parse(prompt_text + " " + activity_text)
+    sec_id = parsed.get("sector_id", "aviculture")
+
+    agro_sectors = ["aviculture", "plantation_cacao", "pisciculture", "jus", "chocolaterie", "savonnerie"]
+    tech_sectors = ["numerique_saas", "energie_solaire"]
+    commerce_sectors = ["magasin_jouets", "quincaillerie", "restaurant", "textile", "boulangerie"]
+    corp_sectors = ["clinique", "pharmacie", "btp", "transport", "education"]
+
+    if sec_id in agro_sectors:
+        chosen_id = "emerald_africa"
+    elif sec_id in tech_sectors:
+        chosen_id = "cyber_indigo"
+    elif sec_id in commerce_sectors:
+        chosen_id = "sahara_commerce"
+    elif sec_id in corp_sectors:
+        chosen_id = "royal_navy"
+    else:
+        chosen_id = "emerald_africa"
+
+    base_tpl = TEMPLATE_CATALOG[chosen_id]
+    return _adapt_template_text(base_tpl, prompt_text, activity_text, sec_id)
+
+def _adapt_template_text(base: ThemeConfig, prompt_text: str, activity_text: str, sector_id: str = "") -> ThemeConfig:
+    """Adapte dynamiquement le sous-titre, slogan et vision au secteur spécifique."""
+    import copy
+    tpl = copy.deepcopy(base)
 
     txt = (prompt_text + " " + activity_text).lower()
+    if "avicol" in txt or "poulet" in txt or "volaille" in txt or sector_id == "aviculture":
+        tpl.subtitle = "Élevage Avicole & Production de Volailles de Chair"
+        tpl.tagline = "Excellence agro-pastorale, traçabilité et disponibilité locale continue"
+        tpl.vision_quote = "Bâtir une filière avicole moderne et souveraine au service de l'alimentation de qualité."
+    elif "cacao" in txt or sector_id == "plantation_cacao":
+        tpl.subtitle = "Exploitation Cacaoyère & Filière d'Excellence"
+        tpl.tagline = "Valoriser le terroir africain avec des fèves de qualité supérieure"
+        tpl.vision_quote = "Produire durablement en alliant rentabilité agro-écologique et qualité export."
+    elif "clinique" in txt or "médical" in txt or sector_id == "clinique":
+        tpl.subtitle = "Santé, Soins Médicaux & Analyses de Proximité"
+        tpl.tagline = "L'accès à des soins d'excellence et une médecine préventive moderne"
+        tpl.vision_quote = "Offrir une prise en charge médicale bienveillante, rigoureuse et accessible."
+    elif "jouet" in txt or sector_id == "magasin_jouets":
+        tpl.subtitle = "Commerce de Détail, Jouets & Éveil Enfants"
+        tpl.tagline = "Éveiller l'imaginaire et accompagner l'épanouissement des enfants"
+        tpl.vision_quote = "Devenir la référence incontournable du jeu éducatif de qualité."
 
-    if any(k in txt for k in ["jouet", "boutique", "magasin", "commerce", "vente", "mode", "restaurant", "cosmétique", "quincaillerie", "détail"]):
-        return TEMPLATE_CATALOG["sahara_commerce"]
-    elif any(k in txt for k in ["agri", "chocolat", "savon", "poulet", "volaille", "ferme", "pisciculture", "miel", "anacarde", "manioc", "vert", "bio", "agrotech", "plantation"]):
-        return TEMPLATE_CATALOG["emerald_africa"]
-    elif any(k in txt for k in ["tech", "logiciel", "app", "digital", "saas", "fintech", "startup", "plateforme", "ia", "intelligence", "cloud", "web"]):
-        return TEMPLATE_CATALOG["cyber_indigo"]
-    else:
-        return TEMPLATE_CATALOG["emerald_africa"]
+    return tpl

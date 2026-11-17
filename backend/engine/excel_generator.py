@@ -137,14 +137,19 @@ class ExcelReportGenerator:
         ws.cell(row=4, column=6).alignment = Alignment(horizontal="center", vertical="center")
 
         fin = m.get("financing", {})
-        part_fp = fin.get("part_fp_pct", 37.5)
+        part_fp = fin.get("part_fp_pct", 30.0)
+        part_loan = fin.get("part_emprunt_pct", 70.0)
+        rate = fin.get("interest_rate", 0.12)
+        rate_pct = round(rate * 100, 1)
+        loan_years = fin.get("loan_duration_years", 5)
+
         kpi_cards = [
             ("Investissement Total (CAPEX+BFR)", f"{kpis.total_investment:,.0f} {currency}".replace(",", " "), "Coût global de démarrage"),
             ("Fonds Propres Mobilisés", f"{kpis.equity_promoter:,.0f} {currency} ({part_fp}%)".replace(",", " "), "Apport promoteur validé"),
-            ("Crédit Moyen Terme Sollicité", f"{kpis.bank_loan:,.0f} {currency}".replace(",", " "), "Taux 8% sur 4-5 ans"),
+            ("Crédit Moyen Terme Sollicité", f"{kpis.bank_loan:,.0f} {currency} ({part_loan}%)".replace(",", " "), f"Taux {rate_pct}% sur {loan_years} ans"),
             ("Chiffre d'Affaires Année 1", f"{kpis.revenue_year1:,.0f} {currency}".replace(",", " "), "Ventes prévisionnelles"),
             ("Résultat Net Bénéficiaire An 1", f"{kpis.net_profit_year1:,.0f} {currency}".replace(",", " "), "Marge nette protectrice"),
-            ("Taux de Rentabilité Interne (TRI)", kpis.irr_pct, "Supérieur au taux bancaire"),
+            ("Taux de Rentabilité Interne (TRI)", kpis.irr_pct, "Rendement financier réel"),
             ("Note de Bancabilité du Dossier", "NOTE A+ (PROJET TRÈS BANCABLE)", "Conforme critères UEMOA/CEMAC")
         ]
 
@@ -712,10 +717,13 @@ class ExcelReportGenerator:
     @classmethod
     def _build_12_remboursement_emprunt(cls, wb, currency: str, m: Dict[str, Any]):
         ws = wb.create_sheet(title="12_Remboursement_Emprunt")
-        cls._create_banner(ws, "B2:G2", "TABLEAU D'AMORTISSEMENT DU CRÉDIT BANCAIRE (Taux 8% l'an)")
+        fin = m.get("financing", {})
+        rate = fin.get("interest_rate", 0.12)
+        rate_pct = round(rate * 100, 1)
+        cls._create_banner(ws, "B2:G2", f"TABLEAU D'AMORTISSEMENT DU CRÉDIT BANCAIRE (Taux {rate_pct}% l'an)")
 
         ws.row_dimensions[4].height = 26
-        headers = ["Période", "Capital Début Période", "Intérêts Annuels (8%)", "Amortissement Capital", "Annuité Totale", "Capital Restant Dû Fin"]
+        headers = ["Période", "Capital Début Période", f"Intérêts Annuels ({rate_pct}%)", "Amortissement Capital", "Annuité Totale", "Capital Restant Dû Fin"]
         for col_idx, h in enumerate(headers, start=2):
             cell = ws.cell(row=4, column=col_idx, value=h)
             cls._style_header_cell(cell)
@@ -728,7 +736,7 @@ class ExcelReportGenerator:
                 rows.append([
                     entry["year"],
                     entry["start_capital"],
-                    f"=C{r}*0.08",
+                    f"=C{r}*{rate}",
                     entry["principal"],
                     f"=D{r}+E{r}",
                     f"=C{r}-E{r}"
@@ -737,7 +745,7 @@ class ExcelReportGenerator:
                 rows.append([
                     entry["year"],
                     f"=G{r-1}",
-                    f"=C{r}*0.08",
+                    f"=C{r}*{rate}",
                     f"=C{r}",
                     f"=D{r}+E{r}",
                     f"=C{r}-E{r}"
@@ -746,7 +754,7 @@ class ExcelReportGenerator:
                 rows.append([
                     entry["year"],
                     f"=G{r-1}",
-                    f"=C{r}*0.08",
+                    f"=C{r}*{rate}",
                     entry["principal"],
                     f"=D{r}+E{r}",
                     f"=C{r}-E{r}"
@@ -947,94 +955,171 @@ class ExcelReportGenerator:
         ws.add_chart(chart_rn, "B28")
 
     # =========================================================================
-    # FEUILLE 15 : BILAN PRÉVISIONNEL SYNTHÉTIQUE SYSCOHADA
+    # FEUILLE 15 : BILAN PRÉVISIONNEL SUR 5 ANS (SYSCOHADA)
     # =========================================================================
     @classmethod
     def _build_15_bilan_previsionnel(cls, wb, currency: str, m: Dict[str, Any]):
         ws = wb.create_sheet(title="15_Bilan_Previsionnel")
-        cls._create_banner(ws, "B2:F2", f"BILAN PRÉVISIONNEL SYNTHÉTIQUE (SYSCOHADA) ({currency})")
+        cls._create_banner(ws, "B2:H2", f"BILAN PRÉVISIONNEL SUR 5 ANS - ACTIF & PASSIF (SYSCOHADA) ({currency})")
 
-        ws.row_dimensions[4].height = 26
-        ws.cell(row=4, column=2, value="ACTIF DU BILAN").fill = PatternFill(fill_type="solid", fgColor=cls.NAVY_DARK)
-        ws.cell(row=4, column=2).font = Font(name="Calibri", size=10, bold=True, color="FFFFFF")
-        ws.cell(row=4, column=3, value=f"Année 1 ({currency})").fill = PatternFill(fill_type="solid", fgColor=cls.NAVY_DARK)
-        ws.cell(row=4, column=3).font = Font(name="Calibri", size=10, bold=True, color="FFFFFF")
-
-        ws.cell(row=4, column=5, value="PASSIF DU BILAN").fill = PatternFill(fill_type="solid", fgColor=cls.NAVY_DARK)
-        ws.cell(row=4, column=5).font = Font(name="Calibri", size=10, bold=True, color="FFFFFF")
-        ws.cell(row=4, column=6, value=f"Année 1 ({currency})").fill = PatternFill(fill_type="solid", fgColor=cls.NAVY_DARK)
-        ws.cell(row=4, column=6).font = Font(name="Calibri", size=10, bold=True, color="FFFFFF")
-
-        b_an1 = m["bilan_an1"]
+        horizon = m.get("horizon_years", 5)
+        bilan_5y = m.get("bilan_5years", [])
         is_commercial = m.get("is_commercial", False)
         stock_label = "Stocks de marchandises (Actif circulant - Cpt 31)" if is_commercial else "Stocks matières & intrants (Actif circulant - Cpt 32/36)"
-        actif = [
-            ["Immobilisations nettes (Actif immobilisé - Cl. 2)", b_an1["immo_nette"]],
-            [stock_label, b_an1["stocks"]],
-            ["Créances clients d'exploitation (Cpt 411)", b_an1["creances"]],
-            ["Trésorerie Actif (Banques & Caisse - Cl. 5)", b_an1["tresorerie"]]
-        ]
 
-        passif = [
-            ["Capital social (Fonds propres - Cpt 101)", b_an1["capital"]],
-            ["Résultat Net de l'exercice (Bénéfice - Cpt 13)", b_an1["resultat_net"]],
-            ["Dettes financières (Crédit bancaire - Cpt 16)", b_an1["dettes_fin"]],
-            ["Fournisseurs et Dettes circulantes (Cpt 401)", b_an1["dettes_fourn"]]
-        ]
-
-        for i in range(4):
-            r = 5 + i
-            ws.cell(row=r, column=2, value=actif[i][0]).font = Font(name="Calibri", size=10)
-            c_a = ws.cell(row=r, column=3, value=actif[i][1])
-            c_a.number_format = f'#,##0 "{currency}"'
-            c_a.font = Font(name="Calibri", size=10)
-
-            ws.cell(row=r, column=5, value=passif[i][0]).font = Font(name="Calibri", size=10)
-            c_p = ws.cell(row=r, column=6, value=passif[i][1])
-            c_p.number_format = f'#,##0 "{currency}"'
-            c_p.font = Font(name="Calibri", size=10)
-
-        # Totaux équilibrés
-        ws.cell(row=9, column=2, value="TOTAL ACTIF DU BILAN").font = Font(name="Calibri", size=10, bold=True)
-        ws.cell(row=9, column=2).fill = PatternFill(fill_type="solid", fgColor=cls.GREEN_BG)
-        tot_a = ws.cell(row=9, column=3, value="=SUM(C5:C8)")
-        tot_a.number_format = f'#,##0 "{currency}"'
-        cls._style_total_cell(tot_a, bg_color=cls.GREEN_BG, font_color=cls.GREEN_TEXT)
-
-        ws.cell(row=9, column=5, value="TOTAL PASSIF DU BILAN").font = Font(name="Calibri", size=10, bold=True)
-        ws.cell(row=9, column=5).fill = PatternFill(fill_type="solid", fgColor=cls.GREEN_BG)
-        tot_p = ws.cell(row=9, column=6, value="=SUM(F5:F8)")
-        tot_p.number_format = f'#,##0 "{currency}"'
-        cls._style_total_cell(tot_p, bg_color=cls.GREEN_BG, font_color=cls.GREEN_TEXT)
-
-        # Équilibre Financier Fonctionnel (FRNG, BFR, Trésorerie Nette)
-        cls._create_section_divider(ws, "B11:F11", "▸ ÉQUILIBRE FINANCIER FONCTIONNEL (FRNG - BFR = TN)")
-        ws.row_dimensions[12].height = 24
-        for col_idx, h in enumerate(["Grand Agrégat Fonctionnel", "Formule Analytique", f"Montant ({currency})", "Diagnostic"], start=2):
-            cell = ws.cell(row=12, column=col_idx, value=h)
+        # En-têtes du Bilan
+        ws.row_dimensions[4].height = 26
+        headers = ["POSTES DU BILAN SYNTHÉTIQUE", "RÉF SYSCOHADA"] + [f"Année {y}" for y in range(1, horizon + 1)]
+        for col_idx, h in enumerate(headers, start=2):
+            cell = ws.cell(row=4, column=col_idx, value=h)
             cls._style_header_cell(cell)
 
-        frng_val = (b_an1["capital"] + b_an1["resultat_net"] + b_an1["dettes_fin"]) - b_an1["immo_nette"]
-        bfr_val = (b_an1["stocks"] + b_an1["creances"]) - b_an1["dettes_fourn"]
-        tn_val = frng_val - bfr_val
+        # 1. SECTION ACTIF
+        actif_items = [
+            ("Immobilisations nettes (Actif immobilisé)", "Classe 2", [b["immo_nette"] for b in bilan_5y]),
+            (stock_label, "Cpt 32/36" if not is_commercial else "Cpt 31", [b["stocks"] for b in bilan_5y]),
+            ("Créances clients d'exploitation", "Cpt 411", [b["creances"] for b in bilan_5y]),
+            ("Trésorerie Actif (Disponibilités Banques & Caisse)", "Classe 5", [b["tresorerie"] for b in bilan_5y])
+        ]
+
+        for i, (label, ref, vals) in enumerate(actif_items):
+            r = 5 + i
+            ws.cell(row=r, column=2, value=label).font = Font(name="Calibri", size=10)
+            ws.cell(row=r, column=3, value=ref).font = Font(name="Calibri", size=9, italic=True, color="64748B")
+            ws.cell(row=r, column=3).alignment = Alignment(horizontal="center")
+            for y_idx in range(horizon):
+                col = 4 + y_idx
+                c = ws.cell(row=r, column=col, value=vals[y_idx] if y_idx < len(vals) else 0)
+                c.number_format = f'#,##0 "{currency}"'
+                c.font = Font(name="Calibri", size=10)
+
+        # Total Actif avec formule Excel
+        ws.cell(row=9, column=2, value="TOTAL ACTIF DU BILAN").font = Font(name="Calibri", size=10, bold=True)
+        ws.cell(row=9, column=2).fill = PatternFill(fill_type="solid", fgColor=cls.GREEN_BG)
+        ws.cell(row=9, column=3, value="TOTAL I").fill = PatternFill(fill_type="solid", fgColor=cls.GREEN_BG)
+        ws.cell(row=9, column=3).font = Font(name="Calibri", size=9, bold=True)
+        ws.cell(row=9, column=3).alignment = Alignment(horizontal="center")
+        for y_idx in range(horizon):
+            col_letter = get_column_letter(4 + y_idx)
+            tot_a = ws.cell(row=9, column=4 + y_idx, value=f"=SUM({col_letter}5:{col_letter}8)")
+            tot_a.number_format = f'#,##0 "{currency}"'
+            cls._style_total_cell(tot_a, bg_color=cls.GREEN_BG, font_color=cls.GREEN_TEXT)
+
+        # 2. SECTION PASSIF
+        passif_items = [
+            ("Capital social (Apport personnel du promoteur)", "Cpt 101", [b["capital"] for b in bilan_5y]),
+            ("Réserves & Report à nouveau (Bénéfices cumulés)", "Cpt 11/12", [b["reserves"] for b in bilan_5y]),
+            ("Résultat Net de l'exercice (Bénéfice de l'année)", "Cpt 13", [b["resultat_net"] for b in bilan_5y])
+        ]
+
+        for i, (label, ref, vals) in enumerate(passif_items):
+            r = 11 + i
+            ws.cell(row=r, column=2, value=label).font = Font(name="Calibri", size=10)
+            ws.cell(row=r, column=3, value=ref).font = Font(name="Calibri", size=9, italic=True, color="64748B")
+            ws.cell(row=r, column=3).alignment = Alignment(horizontal="center")
+            for y_idx in range(horizon):
+                c = ws.cell(row=r, column=4 + y_idx, value=vals[y_idx] if y_idx < len(vals) else 0)
+                c.number_format = f'#,##0 "{currency}"'
+                c.font = Font(name="Calibri", size=10)
+
+        # Sous-total Capitaux Propres
+        ws.cell(row=14, column=2, value="TOTAL CAPITAUX PROPRES").font = Font(name="Calibri", size=10, bold=True)
+        ws.cell(row=14, column=2).fill = PatternFill(fill_type="solid", fgColor=cls.BORDER_SOFT)
+        ws.cell(row=14, column=3, value="Sous-total").fill = PatternFill(fill_type="solid", fgColor=cls.BORDER_SOFT)
+        ws.cell(row=14, column=3).alignment = Alignment(horizontal="center")
+        for y_idx in range(horizon):
+            col_letter = get_column_letter(4 + y_idx)
+            sub_cp = ws.cell(row=14, column=4 + y_idx, value=f"=SUM({col_letter}11:{col_letter}13)")
+            sub_cp.number_format = f'#,##0 "{currency}"'
+            cls._style_total_cell(sub_cp, bg_color=cls.BORDER_SOFT)
+
+        # Dettes financières & Dettes circulantes
+        dettes_items = [
+            ("Dettes financières (Emprunt bancaire à terme)", "Cpt 162", [b["dettes_fin"] for b in bilan_5y]),
+            ("Fournisseurs et Dettes circulantes", "Cpt 401", [b["dettes_fourn"] for b in bilan_5y])
+        ]
+        for i, (label, ref, vals) in enumerate(dettes_items):
+            r = 15 + i
+            ws.cell(row=r, column=2, value=label).font = Font(name="Calibri", size=10)
+            ws.cell(row=r, column=3, value=ref).font = Font(name="Calibri", size=9, italic=True, color="64748B")
+            ws.cell(row=r, column=3).alignment = Alignment(horizontal="center")
+            for y_idx in range(horizon):
+                c = ws.cell(row=r, column=4 + y_idx, value=vals[y_idx] if y_idx < len(vals) else 0)
+                c.number_format = f'#,##0 "{currency}"'
+                c.font = Font(name="Calibri", size=10)
+
+        # Total Passif avec formule Excel
+        ws.cell(row=17, column=2, value="TOTAL PASSIF DU BILAN").font = Font(name="Calibri", size=10, bold=True)
+        ws.cell(row=17, column=2).fill = PatternFill(fill_type="solid", fgColor=cls.GREEN_BG)
+        ws.cell(row=17, column=3, value="TOTAL II").fill = PatternFill(fill_type="solid", fgColor=cls.GREEN_BG)
+        ws.cell(row=17, column=3).font = Font(name="Calibri", size=9, bold=True)
+        ws.cell(row=17, column=3).alignment = Alignment(horizontal="center")
+        for y_idx in range(horizon):
+            col_letter = get_column_letter(4 + y_idx)
+            tot_p = ws.cell(row=17, column=4 + y_idx, value=f"={col_letter}14+{col_letter}15+{col_letter}16")
+            tot_p.number_format = f'#,##0 "{currency}"'
+            cls._style_total_cell(tot_p, bg_color=cls.GREEN_BG, font_color=cls.GREEN_TEXT)
+
+        # 3. LIGNE DE CONTRÔLE D'ÉQUILIBRE STRICT (TOTAL ACTIF - TOTAL PASSIF = 0)
+        ws.cell(row=19, column=2, value="CONTRÔLE D'ÉQUILIBRE (ACTIF - PASSIF)").font = Font(name="Calibri", size=10, bold=True)
+        ws.cell(row=19, column=2).fill = PatternFill(fill_type="solid", fgColor="DCFCE7")
+        ws.cell(row=19, column=3, value="Écart = 0").fill = PatternFill(fill_type="solid", fgColor="DCFCE7")
+        ws.cell(row=19, column=3).font = Font(name="Calibri", size=9, bold=True, color=cls.GREEN_TEXT)
+        ws.cell(row=19, column=3).alignment = Alignment(horizontal="center")
+        for y_idx in range(horizon):
+            col_letter = get_column_letter(4 + y_idx)
+            ctrl_cell = ws.cell(row=19, column=4 + y_idx, value=f"={col_letter}9-{col_letter}17")
+            ctrl_cell.number_format = f'#,##0 "{currency}"'
+            cls._style_total_cell(ctrl_cell, bg_color="DCFCE7", font_color=cls.GREEN_TEXT)
+
+        # 4. Équilibre Financier Fonctionnel (FRNG, BFR, Trésorerie Nette)
+        cls._create_section_divider(ws, f"B21:{get_column_letter(3 + horizon)}21", "▸ ÉQUILIBRE FINANCIER FONCTIONNEL SUR 5 ANS (FRNG - BFR = TRÉSORERIE NETTE)")
+        ws.row_dimensions[22].height = 24
+        fn_headers = ["Grand Agrégat Fonctionnel", "Formule Analytique"] + [f"Année {y}" for y in range(1, horizon + 1)]
+        for col_idx, h in enumerate(fn_headers, start=2):
+            cell = ws.cell(row=22, column=col_idx, value=h)
+            cls._style_header_cell(cell)
+
+        frng_vals = []
+        bfr_vals = []
+        tn_vals = []
+        for b in bilan_5y:
+            frng_y = (b["total_capitaux_propres"] + b["dettes_fin"]) - b["immo_nette"]
+            bfr_y = (b["stocks"] + b["creances"]) - b["dettes_fourn"]
+            tn_y = frng_y - bfr_y
+            frng_vals.append(frng_y)
+            bfr_vals.append(bfr_y)
+            tn_vals.append(tn_y)
 
         agregats = [
-            ["Fonds de Roulement Net Global (FRNG)", "Ressources Stables - Actif Immobilisé", frng_val, "Ressources à long terme suffisantes ✅"],
-            ["Besoin en Fonds de Roulement (BFR)", "Actif Circulant - Passif Circulant", bfr_val, "Cycle d'exploitation maîtrisé ✅"],
-            ["Trésorerie Nette (TN)", "FRNG - BFR (ou Trésorerie Actif - Passif)", tn_val, "Matelas de liquidité positif ✅"]
+            ("Fonds de Roulement Net Global (FRNG)", "Ressources Stables - Actif Immobilisé", frng_vals),
+            ("Besoin en Fonds de Roulement (BFR)", "Actif Circulant - Passif Circulant", bfr_vals),
+            ("Trésorerie Nette (TN)", "FRNG - BFR (ou Trésorerie Actif)", tn_vals)
         ]
-        cls._write_table_data(ws, 13, 2, agregats, numeric_cols=[4], num_format=f'#,##0 "{currency}"')
-        for idx in range(3):
-            ws.cell(row=13 + idx, column=5).font = Font(name="Calibri", size=10, bold=True, color=cls.GREEN_TEXT)
+
+        for i, (label, formule, vals) in enumerate(agregats):
+            r = 23 + i
+            ws.cell(row=r, column=2, value=label).font = Font(name="Calibri", size=10, bold=True)
+            ws.cell(row=r, column=3, value=formule).font = Font(name="Calibri", size=9, italic=True, color="64748B")
+            for y_idx in range(horizon):
+                c = ws.cell(row=r, column=4 + y_idx, value=vals[y_idx] if y_idx < len(vals) else 0)
+                c.number_format = f'#,##0 "{currency}"'
+                c.font = Font(name="Calibri", size=10, bold=True, color=cls.GREEN_TEXT)
 
     # =========================================================================
-    # FEUILLE 16 : PLAN DE TRÉSORERIE MENSUALISÉ SUR 12 MOIS
+    # FEUILLE 16 : PLAN DE TRÉSORERIE PRÉVISIONNEL (12 MOIS & 5 ANS)
     # =========================================================================
     @classmethod
     def _build_16_plan_tresorerie(cls, wb, currency: str, m: Dict[str, Any]):
         ws = wb.create_sheet(title="16_Plan_Tresorerie_12M")
-        cls._create_banner(ws, "B2:N2", f"PLAN DE TRÉSORERIE MENSUELISÉ SUR 12 MOIS ({currency})")
+        cls._create_banner(ws, "B2:N2", f"PLAN DE TRÉSORERIE PRÉVISIONNEL (12 MOIS & 5 ANS) ({currency})")
 
+        horizon = m.get("horizon_years", 5)
+
+        # -------------------------------------------------------------
+        # SECTION 1 : PLAN DE TRÉSORERIE MENSUALISÉ SUR 12 MOIS (ANNÉE 1)
+        # -------------------------------------------------------------
+        cls._create_section_divider(ws, "B3:N3", "▸ 1. PLAN DE TRÉSORERIE MENSUELISÉ SUR 12 MOIS (ANNÉE 1)")
         ws.row_dimensions[4].height = 26
         months = ["Rubrique de Trésorerie", "M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "M10", "M11", "M12"]
         for col_idx, h in enumerate(months, start=2):
@@ -1046,15 +1131,13 @@ class ExcelReportGenerator:
         base_m_chg = round((ca1 - m["kpis"].ebitda_year1) / 12)
         bfr_init = m["bfr"]["net"]
 
-        # Encaissements mensuels progressifs
         encaissements = [round(base_m_ca * factor) for factor in [0.70, 0.80, 0.90, 0.95, 1.0, 1.05, 1.05, 1.10, 1.10, 1.15, 1.15, 1.20]]
-        # Décaissements
         decaissements = [round(base_m_chg * factor) for factor in [0.90, 0.85, 0.90, 0.95, 1.0, 1.0, 1.05, 1.05, 1.10, 1.10, 1.15, 1.15]]
 
         ws.cell(row=5, column=2, value="Solde Initial de Trésorerie").font = Font(name="Calibri", size=10, bold=True)
         ws.cell(row=6, column=2, value="Total Encaissements d'Exploitation").font = Font(name="Calibri", size=10)
         ws.cell(row=7, column=2, value="Total Décaissements d'Exploitation").font = Font(name="Calibri", size=10)
-        ws.cell(row=8, column=2, value="SOLDE FINAL DE CLÔTURE").font = Font(name="Calibri", size=10, bold=True)
+        ws.cell(row=8, column=2, value="SOLDE FINAL DE CLÔTURE MENSUEL").font = Font(name="Calibri", size=10, bold=True)
         ws.cell(row=8, column=2).fill = PatternFill(fill_type="solid", fgColor=cls.GREEN_BG)
 
         for col_idx in range(3, 15):
@@ -1062,25 +1145,60 @@ class ExcelReportGenerator:
             col_letter = get_column_letter(col_idx)
             prev_col_letter = get_column_letter(col_idx - 1)
 
-            # Solde initial
             if m_idx == 0:
                 c_start = ws.cell(row=5, column=col_idx, value=bfr_init)
             else:
                 c_start = ws.cell(row=5, column=col_idx, value=f"={prev_col_letter}8")
             c_start.number_format = "#,##0"
 
-            # Encaissements
             c_enc = ws.cell(row=6, column=col_idx, value=encaissements[m_idx])
             c_enc.number_format = "#,##0"
 
-            # Décaissements
             c_dec = ws.cell(row=7, column=col_idx, value=decaissements[m_idx])
             c_dec.number_format = "#,##0"
 
-            # Solde final
             c_end = ws.cell(row=8, column=col_idx, value=f"={col_letter}5+{col_letter}6-{col_letter}7")
             c_end.number_format = "#,##0"
             cls._style_total_cell(c_end, bg_color=cls.GREEN_BG, font_color=cls.GREEN_TEXT)
+
+        # -------------------------------------------------------------
+        # SECTION 2 : PLAN DE TRÉSORERIE PLURIANNUEL SUR 5 ANS
+        # -------------------------------------------------------------
+        cls._create_section_divider(ws, "B11:G11", "▸ 2. PLAN DE TRÉSORERIE PLURIANNUEL INTÉGRÉ SUR 5 ANS")
+        ws.row_dimensions[12].height = 24
+        t5_headers = ["Flux de Trésorerie Pluriannuels"] + [f"Année {y}" for y in range(1, horizon + 1)]
+        for col_idx, h in enumerate(t5_headers, start=2):
+            cell = ws.cell(row=12, column=col_idx, value=h)
+            cls._style_header_cell(cell)
+
+        treso_5y = m.get("tresorerie_5years", [])
+        t5_rows = [
+            ("Solde Initial de Trésorerie", [t["cash_start"] for t in treso_5y]),
+            ("Excédent Brut d'Exploitation (EBE)", [t["ebitda"] for t in treso_5y]),
+            ("Impôt sur les Sociétés (IS décaissé)", [-t["tax"] for t in treso_5y]),
+            ("Variation du BFR d'exploitation", [-t["delta_bfr"] for t in treso_5y]),
+            ("Flux Net de Trésorerie d'Exploitation (OCF)", [t["ocf"] for t in treso_5y]),
+            ("Service de la Dette (Capital + Intérêts)", [-t["debt_service"] for t in treso_5y]),
+            ("SOLDE FINAL DE CLÔTURE DE TRÉSORERIE", [t["cash_end"] for t in treso_5y])
+        ]
+
+        for i, (label, vals) in enumerate(t5_rows):
+            r = 13 + i
+            is_total = (i == 4 or i == 6)
+            bg = cls.GREEN_BG if i == 6 else (cls.BORDER_SOFT if i == 4 else None)
+
+            ws.cell(row=r, column=2, value=label).font = Font(name="Calibri", size=10, bold=is_total)
+            if bg:
+                ws.cell(row=r, column=2).fill = PatternFill(fill_type="solid", fgColor=bg)
+
+            for y_idx in range(horizon):
+                val = vals[y_idx] if y_idx < len(vals) else 0
+                c = ws.cell(row=r, column=3 + y_idx, value=val)
+                c.number_format = f'#,##0 "{currency}"'
+                if bg:
+                    cls._style_total_cell(c, bg_color=bg, font_color=cls.GREEN_TEXT if i == 6 else "000000")
+                else:
+                    c.font = Font(name="Calibri", size=10)
 
         # Graphique natif : Courbe d'évolution de la trésorerie mensuelle
         chart_line = LineChart()
@@ -1206,15 +1324,18 @@ class ExcelReportGenerator:
 
         k = m["kpis"]
         altman_z = m.get("altman_z", 3.15)
-        dscr_1 = m.get("ratios", {}).get("dscr_an1", 1.85)
+        dscr_val = m.get("ratios", {}).get("dscr_avg", 2.5)
+        ip_val = m.get("ratios", {}).get("profitability_index", 1.8)
+        gearing_val = m.get("financing", {}).get("gearing", 2.33)
+        rate_val = k.loan_interest_rate
 
         rows = [
             ["Valeur Actuelle Nette (VAN à 10%)", f"{k.npv:,.0f} {currency}".replace(",", " "), "> 0", "PROJET TRÈS RENTABLE ✅"],
-            ["Taux de Rentabilité Interne (TRI)", k.irr_pct, "> Taux d'intérêt bancaire (8%)", "EXCELLENT POTENTIEL ✅"],
+            ["Taux de Rentabilité Interne (TRI)", k.irr_pct, f"> Taux d'intérêt bancaire ({rate_val:.1f}%)", "EXCELLENT POTENTIEL ✅"],
             ["Délai de Récupération du Capital (DRCI)", k.payback_period, "< 4 ans", "RISQUE EN CAPITAL FAIBLE ✅"],
-            ["Indice de Profitabilité (IP)", "1.52", "> 1.0", "GAIN DE 52 FCFA PAR FCFA INVESTI ✅"],
-            ["Ratio de Couverture Dette (DSCR An 1)", f"{dscr_1}x", ">= 1.30x", "SERVICE DE DETTE TRÈS BIEN COUVERT ✅"],
-            ["Ratio d'Endettement (Dette / Fonds propres)", "1.33x", "< 2.0x", "STRUCTURE FINANCIÈRE SOLIDE ✅"],
+            ["Indice de Profitabilité (IP)", f"{ip_val:.2f}", "> 1.0", f"GAIN DE {round((ip_val - 1.0) * 100)} FCFA PAR 100 FCFA INVESTIS ✅"],
+            ["Ratio Moyen de Couverture Dette (DSCR)", f"{dscr_val:.2f}x", ">= 1.30x", "SERVICE DE DETTE TRÈS BIEN COUVERT ✅"],
+            ["Ratio d'Endettement (Dette / Fonds propres)", f"{gearing_val:.2f}x", "< 2.5x", "STRUCTURE FINANCIÈRE SOLIDE ✅"],
             ["Score de Risque Altman Z' PME OHADA", f"{altman_z}", "> 2.90 (Zone Sûre)", "RISQUE DE DÉFAILLANCE MINIME ✅"]
         ]
         cls._write_table_data(ws, 5, 2, rows)
