@@ -396,30 +396,62 @@ SECTOR_CATALOG: Dict[str, SectorProfile] = {
         ]
     ),
 
-    # 13. TRANSPORT URBAIN, LOGISTIQUE & LIVRAISON FRIGORIFIQUE
+    # 13. TRANSPORT ROUTIER, INTERURBAIN & LOGISTIQUE DE MARCHANDISES
     "transport": SectorProfile(
         sector_id="transport",
-        name="Transport & Logistique de Distribution Frigorifique",
-        activity="Services de transport routier de marchandises, messagerie urbaine et logistique sous température dirigée",
-        unit="Course / Tonnage transporté",
-        base_daily_volume=35,
+        name="Transport Routier, Interurbain & Logistique de Marchandises",
+        activity="Services de transport routier de marchandises, fret interurbain régulier, livraison urbaine et prestations logistiques",
+        unit="Trajet / Course de fret",
+        base_daily_volume=4,
         working_days_per_year=312,
-        raw_materials_desc="Carburant gasoil en gros, lubrifiants certifiés, pièces de rechange d'origine et consommables d'arrimage",
+        raw_materials_desc="Carburant gasoil routier en gros, frais de péage autoroutiers, lubrifiants certifiés, pneumatiques neufs et pièces d'usure",
         products=[
-            ProductItem(id=1, name="Transport frigorifique sous température dirigée", description="Livraison de denrées périssables, viandes, volailles et produits laitiers", share_pct=0.50, unit_price=25000),
-            ProductItem(id=2, name="Messagerie urbaine & courses express B2B", description="Livraison rapide de colis et marchandises pour entreprises et commerces", share_pct=0.30, unit_price=10000),
-            ProductItem(id=3, name="Location de camionnettes avec chauffeur", description="Mise à disposition journalière pour déménagements et transferts de stocks", share_pct=0.20, unit_price=50000)
+            ProductItem(id=1, name="Fret routier interurbain régulier (Camion 10t)", description="Liaisons interurbaines corridors régionaux pour industriels et grossistes", share_pct=0.55, unit_price=220000),
+            ProductItem(id=2, name="Distribution & messagerie urbaine de marchandises", description="Navettes urbaines de livraison et approvisionnement commerces", share_pct=0.30, unit_price=85000),
+            ProductItem(id=3, name="Location de camion porteur 10t avec chauffeur", description="Mise à disposition journalière pour chantiers et transferts logistiques", share_pct=0.15, unit_price=160000)
         ],
         equipment=[
-            EquipmentItem(name="2 Véhicules utilitaires frigorifiques isothermes récents", cost=18000000, duration_years=5, depreciation_rate=0.20),
-            EquipmentItem(name="Véhicule fourgon tôlé 3.5 tonnes pour fret sec urbain", cost=8000000, duration_years=5, depreciation_rate=0.20),
-            EquipmentItem(name="Système de géolocalisation GPS & balises télématiques flotte", cost=1200000, duration_years=4, depreciation_rate=0.25),
-            EquipmentItem(name="Équipements de manutention (transpalettes manuels & diables)", cost=800000, duration_years=4, depreciation_rate=0.25)
+            EquipmentItem(name="5 Camions porteurs 10 tonnes récents révisés", cost=75000000, duration_years=5, depreciation_rate=0.20),
+            EquipmentItem(name="Système de géolocalisation GPS & balises télématiques (5 unités)", cost=2000000, duration_years=4, depreciation_rate=0.25),
+            EquipmentItem(name="Aménagement du parc logistique & bureau d'exploitation", cost=3500000, duration_years=5, depreciation_rate=0.20),
+            EquipmentItem(name="Matériel informatique, logiciel de gestion flotte & facturation", cost=2500000, duration_years=4, depreciation_rate=0.25),
+            EquipmentItem(name="Frais administratifs, licences de transport, immatriculations & agréments", cost=2500000, duration_years=5, depreciation_rate=0.20)
         ],
         staff=[
             StaffItem(title="Responsable d'Exploitation & Flotte", count=1, monthly_net=350000, monthly_cnps=56000),
-            StaffItem(title="Chauffeurs-Livreurs professionnels qualifiés", count=3, monthly_net=150000, monthly_cnps=24000),
-            StaffItem(title="Mécanicien et agent d'entretien flotte", count=1, monthly_net=130000, monthly_cnps=20000)
+            StaffItem(title="Chauffeurs routiers professionnels qualifiés", count=5, monthly_net=175000, monthly_cnps=28000),
+            StaffItem(title="Mécanicien / Chef d'atelier flotte", count=1, monthly_net=160000, monthly_cnps=25000),
+            StaffItem(title="Commercial / Gestionnaire comptes clients", count=1, monthly_net=180000, monthly_cnps=29000),
+            StaffItem(title="Comptable & Gestionnaire administratif", count=1, monthly_net=160000, monthly_cnps=25000)
+        ]
+    ),
+
+    # 13b. AGRICULTURE MODERNE & CULTURE DE TOMATES MARAÎCHÈRES
+    "agriculture": SectorProfile(
+        sector_id="agriculture",
+        name="Exploitation Maraîchère & Culture Moderne de Tomates",
+        activity="Production maraîchère sous irrigation goutte-à-goutte, récolte et commercialisation de tomates fraîches de table",
+        unit="Cagette 25kg / Tonne récoltée",
+        base_daily_volume=20,
+        working_days_per_year=300,
+        raw_materials_desc="Semences certifiées hybrides, engrais solubles NPK & urée, produits phytosanitaires biologiques et cagettes de récolte",
+        products=[
+            ProductItem(id=1, name="Tomates fraîches de table 1er choix (Cagette 25kg)", description="Tomates fermes, calibrées pour grossistes, supermarchés et restaurants", share_pct=0.65, unit_price=14000),
+            ProductItem(id=2, name="Tomates de plein champ 2ème choix pour marchés", description="Tomates mûres destinées aux revendeuses locales et transformation", share_pct=0.25, unit_price=8500),
+            ProductItem(id=3, name="Légumes maraîchers de diversification (Poivrons, Piments)", description="Cultures intercalaires complémentaires valorisant le réseau d'irrigation", share_pct=0.10, unit_price=12000)
+        ],
+        equipment=[
+            EquipmentItem(name="Réseau d'irrigation goutte-à-goutte complet avec fertigation (1 ha)", cost=4500000, duration_years=5, depreciation_rate=0.20),
+            EquipmentItem(name="Forage profond, motopompe thermique & château d'eau 10m³", cost=5500000, duration_years=8, depreciation_rate=0.125),
+            EquipmentItem(name="Préparation du terrain, labour profond, billonnage & clôture sécurisée", cost=3000000, duration_years=5, depreciation_rate=0.20),
+            EquipmentItem(name="Hangar de stockage ventilé & aire de conditionnement des récoltes", cost=2500000, duration_years=8, depreciation_rate=0.125),
+            EquipmentItem(name="Moto-tricycle utilitaire 250cc pour évacuation bord-champ", cost=2000000, duration_years=4, depreciation_rate=0.25),
+            EquipmentItem(name="Matériel maraîcher (pulvérisateurs, balance électronique, caisses)", cost=1200000, duration_years=3, depreciation_rate=0.33)
+        ],
+        staff=[
+            StaffItem(title="Chef d'Exploitation / Agronome Maraîcher", count=1, monthly_net=280000, monthly_cnps=45000),
+            StaffItem(title="Ouvriers agricoles maraîchers permanents", count=4, monthly_net=100000, monthly_cnps=16000),
+            StaffItem(title="Magasinier & Responsable expéditions récoltes", count=1, monthly_net=120000, monthly_cnps=19000)
         ]
     ),
 
@@ -536,9 +568,8 @@ def detect_sector(prompt: str) -> SectorProfile:
     """Détecte avec rigueur mathématique et sémantique le secteur d'activité adéquat."""
     from .prompt_parser import PromptParser
     parsed = PromptParser.parse(prompt)
-    sec_id = parsed.get("sector_id", "aviculture")
+    sec_id = parsed.get("sector_id", "transport")
     if sec_id in SECTOR_CATALOG:
         return SECTOR_CATALOG[sec_id]
 
-    # Repli propre sur aviculture si prompt agricole/aviculture
-    return SECTOR_CATALOG.get(sec_id, SECTOR_CATALOG["aviculture"])
+    return SECTOR_CATALOG.get(sec_id, SECTOR_CATALOG["transport"])

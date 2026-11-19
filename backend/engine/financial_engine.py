@@ -121,13 +121,22 @@ class FinancialEngine:
             total_besoins = total_equipment + bfr_initial + frais_etablissement
 
         # 3. VOLUMES ET CHIFFRE D'AFFAIRES
-        # Calibration spécifique pour aviculture (5000 poussins / 6 cycles = 30 000 sujets/an)
-        is_aviculture = "avicul" in profile.sector_id or "poulet" in act_text or "volaille" in act_text
-        if is_aviculture:
+        # Calibration spécifique par secteur d'activité
+        if profile.sector_id == "aviculture" or ("poulet" in act_text and profile.sector_id not in ["transport", "agriculture", "clinique"]):
             annual_chicks = 30000  # 5000 poussins x 6 cycles
             mortality_rate = 0.05   # 5% mortalité prévisionnelle
             marketable_broilers = round(annual_chicks * (1.0 - mortality_rate))  # 28 500 poulets
             profile.base_daily_volume = round(marketable_broilers / profile.working_days_per_year)
+        elif profile.sector_id == "transport":
+            # 5 camions effectuant ~15 trajets / mois chacun = 75 trajets / mois
+            # Sur 312 jours ouvrables = ~3 trajets / jour
+            profile.base_daily_volume = 3
+            profile.working_days_per_year = 312
+        elif profile.sector_id == "agriculture":
+            # 1 hectare de tomates irriguées = ~45 tonnes / an = 1 800 cagettes de 25kg
+            # Sur 300 jours ouvrables = 6 cagettes / jour
+            profile.base_daily_volume = 6
+            profile.working_days_per_year = 300
 
         base_daily = profile.base_daily_volume
         working_days = profile.working_days_per_year
@@ -176,17 +185,50 @@ class FinancialEngine:
         annual_payroll = monthly_payroll_total * 12
 
         # 6. CHARGES D'EXPLOITATION PAR NATURE (SYSCOHADA)
-        # Pour aviculture : achats = poussins + provende (environ 42% du CA)
-        achats_matieres_ratio = 0.42 if is_aviculture else 0.40
-        achats_matieres_an1 = round(ca_total_an1 * achats_matieres_ratio)
-        achats_emballages_an1 = round(ca_total_an1 * 0.05)
-        energie_atelier_an1 = round(ca_total_an1 * 0.035)  # Chauffage radiants gaz + électricité
-        carburant_transport_an1 = round(ca_total_an1 * 0.030)
-        maintenance_an1 = round(ca_total_an1 * 0.020)
-        assurances_an1 = round(ca_total_an1 * 0.012)
-        telecom_an1 = round(ca_total_an1 * 0.008)
-        marketing_an1 = round(ca_total_an1 * 0.025)
-        frais_bancaires_an1 = round(ca_total_an1 * 0.006)
+        is_aviculture = profile.sector_id == "aviculture" or ("poulet" in act_text and profile.sector_id not in ["transport", "agriculture", "clinique"])
+        sec_id = profile.sector_id
+
+        if sec_id == "transport":
+            achats_matieres_an1 = round(ca_total_an1 * 0.28)     # Carburant Gasoil
+            achats_emballages_an1 = round(ca_total_an1 * 0.05)   # Frais de péage autoroutiers
+            energie_atelier_an1 = round(ca_total_an1 * 0.015)     # Électricité base logistique
+            carburant_transport_an1 = round(ca_total_an1 * 0.035) # Lubrifiants & fluides
+            maintenance_an1 = round(ca_total_an1 * 0.075)         # Entretien, pneumatiques neufs & révisions
+            assurances_an1 = round(ca_total_an1 * 0.035)          # Assurances flotte 5 camions + assurance fret
+            telecom_an1 = round(ca_total_an1 * 0.012)             # Télématique GPS & télécoms
+            marketing_an1 = round(ca_total_an1 * 0.015)           # Prospection commerciale B2B
+            frais_bancaires_an1 = round(ca_total_an1 * 0.006)
+        elif sec_id == "agriculture":
+            achats_matieres_an1 = round(ca_total_an1 * 0.26)     # Semences hybrides & fertilisants NPK
+            achats_emballages_an1 = round(ca_total_an1 * 0.06)   # Cagettes de récolte 25kg
+            energie_atelier_an1 = round(ca_total_an1 * 0.045)    # Carburant motopompe / irrigation
+            carburant_transport_an1 = round(ca_total_an1 * 0.02) # Évacuation moto-tricycle
+            maintenance_an1 = round(ca_total_an1 * 0.035)        # Entretien réseau goutte-à-goutte
+            assurances_an1 = round(ca_total_an1 * 0.012)         # Assurance agricole multirisque
+            telecom_an1 = round(ca_total_an1 * 0.008)
+            marketing_an1 = round(ca_total_an1 * 0.020)          # Commercialisation & circuits de distribution
+            frais_bancaires_an1 = round(ca_total_an1 * 0.006)
+        elif sec_id == "clinique":
+            achats_matieres_an1 = round(ca_total_an1 * 0.25)     # Réactifs automates biochimie & NFS
+            achats_emballages_an1 = round(ca_total_an1 * 0.08)   # Consommables stériles prélèvement
+            energie_atelier_an1 = round(ca_total_an1 * 0.035)    # Électricité climatisations & automates
+            carburant_transport_an1 = round(ca_total_an1 * 0.01) # Navette prélèvements
+            maintenance_an1 = round(ca_total_an1 * 0.045)        # Contrat de maintenance automates médicaux
+            assurances_an1 = round(ca_total_an1 * 0.025)         # RC médicale & multirisque pro
+            telecom_an1 = round(ca_total_an1 * 0.015)            # Envoi résultats SMS / Web
+            marketing_an1 = round(ca_total_an1 * 0.015)
+            frais_bancaires_an1 = round(ca_total_an1 * 0.006)
+        else:
+            achats_matieres_ratio = 0.42 if is_aviculture else 0.40
+            achats_matieres_an1 = round(ca_total_an1 * achats_matieres_ratio)
+            achats_emballages_an1 = round(ca_total_an1 * 0.05)
+            energie_atelier_an1 = round(ca_total_an1 * 0.035)
+            carburant_transport_an1 = round(ca_total_an1 * 0.030)
+            maintenance_an1 = round(ca_total_an1 * 0.020)
+            assurances_an1 = round(ca_total_an1 * 0.012)
+            telecom_an1 = round(ca_total_an1 * 0.008)
+            marketing_an1 = round(ca_total_an1 * 0.025)
+            frais_bancaires_an1 = round(ca_total_an1 * 0.006)
 
         stock_matieres = round(achats_matieres_an1 / 10)  # ~36 jours de stocks intrants
         creances_clients = round(ca_total_an1 / 24)        # 15 jours de crédit
@@ -223,11 +265,14 @@ class FinancialEngine:
             cap_restant = cap_fin
 
         # 9. COMPTE DE RÉSULTAT PRÉVISIONNEL (SIG SYSCOHADA) SUR HORIZON N ANS
+        achats_ratio_global = (achats_matieres_an1 + achats_emballages_an1) / max(ca_total_an1, 1)
+        services_ratio_global = (energie_atelier_an1 + carburant_transport_an1 + maintenance_an1 + assurances_an1 + telecom_an1 + marketing_an1 + frais_bancaires_an1) / max(ca_total_an1, 1)
+
         cr_years = []
         for i, ca in enumerate(ca_years):
-            ach = round(ca * (achats_matieres_ratio + 0.05))
+            ach = round(ca * achats_ratio_global)
             marge_brute = ca - ach
-            serv = round(ca * 0.10)
+            serv = round(ca * services_ratio_global)
             valeur_ajoutee = marge_brute - serv
             perso = round(annual_payroll * (1.0 + i * 0.05))
             ebe = valeur_ajoutee - perso

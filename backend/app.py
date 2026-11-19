@@ -101,17 +101,35 @@ def generate_business_plan(req: PlanRequest):
             default_currency=req.currency or "FCFA"
         )
 
-        country = req.country if req.country and req.country != "Côte d'Ivoire" else parsed["country"]
-        currency = req.currency if req.currency and req.currency != "FCFA" else parsed["currency"]
-        project_name = req.company_name or parsed["company_name"]
+        # Priorité absolue aux entités explicitement détectées dans le prompt
+        if parsed.get("has_explicit_country"):
+            country = parsed["country"]
+        elif req.country and req.country != "Côte d'Ivoire":
+            country = req.country
+        else:
+            country = parsed["country"]
+
+        currency = parsed["currency"] if parsed.get("currency") and parsed["currency"] != "FCFA" else (req.currency or "FCFA")
+        project_name = parsed["company_name"] if parsed.get("company_name") and "SARL" in parsed["company_name"] else (req.company_name or parsed["company_name"])
 
         extracted_budget = req.total_budget or parsed["total_budget"]
         extracted_years = req.horizon_years or parsed["horizon_years"] or 5
-        equity_ratio = req.equity_ratio if req.equity_ratio is not None else parsed["equity_ratio"]
-        loan_ratio = req.loan_ratio if req.loan_ratio is not None else parsed["loan_ratio"]
-        loan_interest_rate = req.loan_interest_rate if req.loan_interest_rate is not None else parsed["loan_interest_rate"]
+
+        # Paramètres de financement : priorité absolue aux mentions du prompt
+        if parsed.get("has_explicit_financing"):
+            equity_ratio = parsed["equity_ratio"]
+            loan_ratio = parsed["loan_ratio"]
+        else:
+            equity_ratio = req.equity_ratio if req.equity_ratio is not None else parsed["equity_ratio"]
+            loan_ratio = req.loan_ratio if req.loan_ratio is not None else parsed["loan_ratio"]
+
+        if parsed.get("has_explicit_interest_rate"):
+            loan_interest_rate = parsed["loan_interest_rate"]
+        else:
+            loan_interest_rate = req.loan_interest_rate if req.loan_interest_rate is not None else parsed["loan_interest_rate"]
+
         loan_duration_years = req.loan_duration_years or parsed["loan_duration_years"] or 5
-        sector_id = req.sector_id or parsed["sector_id"]
+        sector_id = parsed.get("sector_id") or req.sector_id
 
         # 2. Conception ou sélection du profil sectoriel sans AUCUNE contamination étrangère
         dynamic_profile = GeminiSectorEngine.generate_dynamic_sector(
@@ -156,7 +174,7 @@ def generate_business_plan(req: PlanRequest):
             print(f"[Quality Gate Warning] {qc_report.errors}")
 
         # 5. Choix et adaptation chirurgicale du Template Visuel
-        selected_theme = detect_or_get_template(req.template_id, req.prompt, profile.activity)
+        selected_theme = detect_or_get_template(req.template_id, req.prompt, profile.activity, sector_id=profile.sector_id)
         fin_data["template_id"] = selected_theme.id
         fin_data["theme"] = selected_theme
 

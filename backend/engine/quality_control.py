@@ -32,19 +32,27 @@ class QualityControl:
 
     # Termes strictement interdits par secteur pour éviter toute contamination
     SECTOR_CONTAMINATION_RULES = {
+        "transport": [
+            "poulet", "poussin", "volaille", "avicole", "couvoir", "clinique", "médical",
+            "cacao", "jouet", "dégustation", "recette", "haccp", "agro-pastorale", "filière avicole"
+        ],
+        "agriculture": [
+            "poulet", "poussin", "volaille", "avicole", "couvoir", "clinique", "médical",
+            "camion porteur", "fret routier", "filière avicole", "coxeur"
+        ],
         "aviculture": [
             "clinique", "médical", "medical", "consultation", "échographe", "echographe",
             "hospitalisation", "docteur", "infirmier", "chirurgie", "stéthoscope", "jouet",
-            "poupée", "peluche", "cacao", "chocolat"
+            "poupée", "peluche", "cacao", "chocolat", "camion porteur", "fret routier"
         ],
         "plantation_cacao": [
-            "clinique", "médical", "poulet", "poussin", "volaille", "jouet", "poupée"
+            "clinique", "médical", "poulet", "poussin", "volaille", "jouet", "poupée", "fret"
         ],
         "clinique": [
-            "poulet", "poussin", "volaille", "cacao", "jouet", "poupée", "chocolat"
+            "poulet", "poussin", "volaille", "cacao", "jouet", "poupée", "chocolat", "fret", "agro-pastorale"
         ],
         "magasin_jouets": [
-            "clinique", "médical", "poulet", "poussin", "volaille", "cacao", "pisciculture"
+            "clinique", "médical", "poulet", "poussin", "volaille", "cacao", "pisciculture", "fret"
         ]
     }
 
@@ -180,4 +188,39 @@ class QualityControl:
         if abs(kpis.irr_value - 28.6) < 0.001 and sec_id != "clinique":
             report.add_warning("Ratios financiers", "Le TRI est exactement égal à 28.6%, vérifier que le solveur numérique a tourné.")
 
+        return report
+
+    @classmethod
+    def audit_workbook(cls, wb: Any, sector_id: str) -> QualityControlReport:
+        """Contrôle chirurgical cellule par cellule de l'absence de contamination dans le classeur Excel."""
+        report = QualityControlReport()
+        forbidden_words = cls.SECTOR_CONTAMINATION_RULES.get(sector_id, [])
+        if not forbidden_words:
+            report.add_check("Audit Workbook Contamination", True, f"Secteur {sector_id} sans exclusion")
+            return report
+
+        violations = []
+        for sheetname in wb.sheetnames:
+            ws = wb[sheetname]
+            for row in ws.iter_rows(values_only=True):
+                for val in row:
+                    if isinstance(val, str):
+                        v_lower = val.lower()
+                        for fw in forbidden_words:
+                            if fw in v_lower:
+                                violations.append((sheetname, fw, val[:70]))
+
+        if violations:
+            for sname, fw, excerpt in violations[:6]:
+                report.add_check(
+                    f"Contamination Cellule [{sname}]",
+                    False,
+                    f"Terme interdit '{fw}' trouvé dans : « {excerpt} »"
+                )
+        else:
+            report.add_check(
+                "Audit Workbook Zéro Contamination",
+                True,
+                "Classeur 100% étanche. Aucune contamination étrangère détectée dans les 20 feuilles."
+            )
         return report

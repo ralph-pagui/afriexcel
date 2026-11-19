@@ -41,7 +41,7 @@ class ExcelReportGenerator:
         profile = data["profile"]
         m = data
 
-        theme = data.get("theme") or detect_or_get_template(template_id or data.get("template_id"), prompt_text=project_name, activity_text=profile.activity)
+        theme = data.get("theme") or detect_or_get_template(template_id or data.get("template_id"), prompt_text=project_name, activity_text=profile.activity, sector_id=profile.sector_id)
         cls.current_theme = theme
         m["theme"] = theme
 
@@ -187,8 +187,25 @@ class ExcelReportGenerator:
 
         horizon = (m or {}).get("horizon_years", 5)
         is_comm = (m or {}).get("is_commercial", False)
+        sec_id = getattr(profile, "sector_id", "")
+
         appro_label = "Approvisionnement Marchandises / Stocks" if is_comm else "Approvisionnement Matières Premières & Intrants"
-        norme_label = "Conformité stricte aux règles commerciales, immatriculation RCCM & IFU local" if is_comm else "Conformité stricte aux normes d'hygiène HACCP, traçabilité et immatriculation RCCM & IFU local"
+        if sec_id == "transport":
+            appro_label = "Approvisionnement Carburant, Pneumatiques & Maintenance"
+            norme_label = "Licence d'exploitation de transport routier de marchandises, visites techniques régulières, RCCM & déclaration fiscale"
+        elif sec_id == "agriculture":
+            appro_label = "Approvisionnement Semences Certifiées, Fertilisants & Intrants Maraîchers"
+            norme_label = "Bonnes pratiques agricoles (GAP), traçabilité des récoltes, conformité phytosanitaire & RCCM"
+        elif sec_id == "clinique":
+            appro_label = "Approvisionnement Réactifs de Laboratoire & Consommables Médicaux Stériles"
+            norme_label = "Agrément du Ministère de la Santé, contrôle qualité des automates, protocole DASRI & RCCM"
+        elif sec_id == "aviculture":
+            appro_label = "Approvisionnement Poussins d'un Jour, Aliments Provende & Produits Vétérinaires"
+            norme_label = "Normes de biosécurité avicole, suivi sanitaire vétérinaire régulier, RCCM & déclaration fiscale"
+        elif is_comm:
+            norme_label = "Conformité stricte aux règles commerciales, immatriculation RCCM & IFU/NINEA local"
+        else:
+            norme_label = "Conformité aux réglementations sectorielles en vigueur, normes professionnelles, RCCM & déclaration fiscale"
         rows = [
             ["Raison Sociale / Enseigne", project_name],
             ["Activité Principale Déclarée", profile.activity],
@@ -237,11 +254,37 @@ class ExcelReportGenerator:
             cell = ws.cell(row=11, column=col_idx, value=h)
             cls._style_header_cell(cell)
 
-        comp_rows = [
-            ["Opérateurs Informels Locaux", "Petits producteurs / commerçants de quartier", "Proximité, prix bas sans taxes", "Qualité variable, hygiène incertaine, pas de traçabilité", "Qualité certifiée, régularité des stocks et conditionnement pro"],
-            ["Importations Étrangères", "Produits industriels importés", "Marques connues, emballages attrayants", "Prix élevés, délais de livraison longs, rupture fréquente", "Prix compétitif, fraîcheur locale et disponibilité permanente"],
-            ["Acteurs Modernes Structurés", "Moyennes et grandes entreprises", "Capacité financière et logistique", "Coûts de structure lourds, faible flexibilité client", "Réactivité commerciale, service personnalisé et ancrage de terrain"]
-        ]
+        sec_id = getattr(profile, "sector_id", "")
+        if sec_id == "transport":
+            comp_rows = [
+                ["Transporteurs Informels / Coxeurs", "Opérateurs isolés, vieux camions vétustes", "Prix bas négociés au coup par coup", "Retards fréquents, pannes récurrentes, fret non assuré, aucun suivi", "Flotte moderne 10t, traçabilité GPS temps réel, respect strict des délais et fret assuré"],
+                ["Grandes Compagnies Multinationales", "Grands groupes logistiques internationaux", "Forte notoriété, logistique multimodale maritime/aérienne", "Tarifs prohibitifs, lourdeur administrative, focalisation sur très grands comptes", "Tarifs compétitifs PME, réactivité commerciale 24/7 et flexibilité contractuelle"],
+                ["Flottes propres des entreprises", "Camions intégrés de certains industriels", "Disponibilité interne directe pour l'entreprise propriétaire", "Coûts fixes très lourds, immobilisation de capital, retours à vide fréquents", "Externalisation variable à la demande, optimisation des coûts et zéro immobilisation CAPEX"]
+            ]
+        elif sec_id == "agriculture":
+            comp_rows = [
+                ["Producteurs Maraîchers Traditionnels", "Petits exploitants en culture pluviale plein champ", "Faibles coûts initiaux, circuits courts de village", "Production saisonnière irrégulière, calibrage hétérogène, ruptures en saison sèche", "Production continue toute l'année sous irrigation goutte-à-goutte, calibrage 1er choix"],
+                ["Importations Sous-régionales", "Tomates en provenance des pays voisins", "Disponibilité temporaire en contre-saison", "Coûts de transport et douanes élevés, pertes par avarie durant le trajet", "Fraîcheur bord champ, récolte à maturité optimale et approvisionnement immédiat"],
+                ["Grossistes et Intermédiaires des Marchés", "Commerçants collecteurs des marchés urbains", "Maîtrise des flux de trésorerie au comptant", "Spéculation sur les prix, pression à la baisse sur les producteurs", "Contrats d'approvisionnement direct avec supermarchés, restaurants et grossistes fiables"]
+            ]
+        elif sec_id == "clinique":
+            comp_rows = [
+                ["Structures Sanitaires Publiques", "Centres de santé de référence et hôpitaux publics", "Tarifs subventionnés par l'État", "Files d'attente interminables, ruptures de réactifs, automates souvent en panne", "Prise en charge immédiate, automates récents, résultats fiables en moins de 2 heures"],
+                ["Laboratoires Informels de Quartier", "Petites officines non accréditées", "Proximité immédiate dans les quartiers périphériques", "Contrôles qualité insuffisants, manque de réactifs validés, absence de biologiste", "Biologiste diplômé permanent, contrôles qualité étalonnés, hygiène et traçabilité certifiée"],
+                ["Grands Laboratoires Centraux Privés", "Quelques laboratoires de prestige du centre-ville", "Plateau technique très complet", "Tarifs très onéreux, éloignement géographique pour les communes périphériques", "Tarification accessible conventionnée, proximité géographique et transmission par SMS/Web"]
+            ]
+        elif sec_id == "aviculture":
+            comp_rows = [
+                ["Éleveurs Traditionnels & Basse-cour", "Petits éleveurs informels en claustration sommaire", "Faibles coûts de structure, proximité villageoise", "Taux de mortalité élevé (>15%), croissance lente, approvisionnement irrégulier", "Poulets calibrés 1.8-2.0 kg, alimentation contrôlée, prophylaxie rigoureuse et disponibilité continue"],
+                ["Importations de Volailles Congelées", "Découpes et poulets surgelés importés", "Prix bas au carton, marques internationales", "Qualité gustative altérée par décongélation, dépendance extérieure, devises", "Poulets frais abattus localement du jour, traçabilité garantie et soutien à l'économie locale"],
+                ["Fermes Industrielles Intégrées", "Quelques grands complexes avicoles nationaux", "Volumes importants et capacités financières", "Politique commerciale rigide axée uniquement sur les hypermarchés", "Proximité relationnelle, flexibilité des volumes livrés aux demi-grossistes et rôtisseries"]
+            ]
+        else:
+            comp_rows = [
+                ["Opérateurs Informels Locaux", "Petits producteurs / commerçants de quartier", "Proximité, prix bas sans taxes", "Qualité variable, absence de facturation officielle, pas de traçabilité", "Qualité certifiée, facturation normalisée OHADA, régularité des approvisionnements"],
+                ["Importations Étrangères", "Produits industriels importés", "Marques connues, emballages attrayants", "Prix élevés, délais de livraison longs, rupture fréquente", "Prix compétitif, disponibilité locale permanente et service après-vente réactif"],
+                ["Acteurs Modernes Structurés", "Moyennes et grandes entreprises", "Capacité financière et logistique", "Coûts de structure lourds, faible flexibilité client", "Réactivité commerciale, service personnalisé et ancrage de terrain"]
+            ]
         cls._write_table_data(ws, 12, 2, comp_rows)
 
         # Section 3 : Dynamique et Croissance du Marché
@@ -285,15 +328,58 @@ class ExcelReportGenerator:
 
         p1_price = profile.products[0].unit_price
         p_last_price = profile.products[-1].unit_price
-        rows = [
-            ["1. Produit (Product)", f"Gamme premium adaptée au marché : {profile.products[0].name}", "Traçabilité, conformité sanitaire et packaging valorisant"],
-            ["2. Prix (Price)", f"Positionnement compétitif : de {p1_price:,.0f} à {p_last_price:,.0f} {currency}".replace(",", " "), "Pénétration rapide tout en préservant une marge brute protectrice"],
-            ["3. Distribution (Place)", "Canaux mixtes : points de vente directs, supermarchés, revendeurs locaux", "Couverture efficace des zones urbaines à fort trafic"],
-            ["4. Promotion (Promotion)", "Marketing digital (réseaux sociaux), dégustations, PLV, salons professionnels", "Visibilité immédiate et acquisition rapide de parts de marché"],
-            ["5. Personnel (People)", "Équipe de vente formée aux techniques de vente et relation client", "Conseil expert et fidélisation de la clientèle locale"],
-            ["6. Processus (Process)", "Commandes via WhatsApp Business, livraison rapide et facturation instantanée", "Expérience d'achat fluide et sans friction"],
-            ["7. Preuve Matérielle (Physical)", "Aménagement moderne, propreté irréprochable et étiquetage professionnel", "Garantie de confiance et réassurance client"]
-        ]
+        sec_id = getattr(profile, "sector_id", "")
+
+        if sec_id == "transport":
+            rows = [
+                ["1. Produit (Product)", f"Fret routier & logistique de marchandises : {profile.products[0].name}", "Sécurité absolue des marchandises, arrimage certifié, géolocalisation GPS en temps réel"],
+                ["2. Prix (Price)", f"Tarification kilométrique & forfaits transparents : de {p1_price:,.0f} à {p_last_price:,.0f} {currency}".replace(",", " "), "Tarifs ultra-compétitifs et dégressifs selon volumes et fréquence contractuelle"],
+                ["3. Distribution (Place)", "Axes routiers majeurs et corridors économiques régionaux", "Dessertes régulières quotidiennes, hubs de distribution et parkings logistiques partenaires"],
+                ["4. Promotion (Promotion)", "Prospection commerciale B2B ciblée auprès des industriels, grossistes et importateurs", "Signature de contrats-cadres annuels, présence annuaires professionnels et plateforme web"],
+                ["5. Personnel (People)", "Chauffeurs routiers expérimentés formés à l'éco-conduite et régulateur de flotte dédié", "Sens aigu de la ponctualité, respect strict du code de la route et relation client soignée"],
+                ["6. Processus (Process)", "Gestion digitalisée des ordres de mission et transmission instantanée des bordereaux", "Ordres de mission informatisés, tracking de livraison en direct et bons émargés dématérialisés"],
+                ["7. Preuve Matérielle (Physical)", "Flotte de 5 camions 10t récents floqués, carnets d'entretien et attestations d'assurance", "Garantie de solvabilité, attestations d'assurance fret et base logistique sécurisée"]
+            ]
+        elif sec_id == "agriculture":
+            rows = [
+                ["1. Produit (Product)", f"Tomates fraîches de table calibre sélectionné : {profile.products[0].name}", "Fermeté, excellente tenue post-récolte, saveur authentique sans résidus toxiques"],
+                ["2. Prix (Price)", f"Prix de gros compétitif bord-champ : de {p1_price:,.0f} à {p_last_price:,.0f} {currency}".replace(",", " "), "Marge très attractive pour les demi-grossistes tout en sécurisant la rentabilité de la parcelle"],
+                ["3. Distribution (Place)", "Circuits courts : marchés de gros urbains, grossistes partenaires et restauration", "Livraisons directes en cagettes aérées pour préserver l'intégrité physique des fruits"],
+                ["4. Promotion (Promotion)", "Démarchage direct des coopératives de commerçantes, centrales d'achats et restaurants", "Échantillonnage qualité, partenariats réguliers et communication WhatsApp Pro"],
+                ["5. Personnel (People)", "Ouvriers agricoles maraîchers formés aux bonnes pratiques culturales", "Rigueur lors du tuteurage, du désherbage manuel et de la cueillette soignée à maturité"],
+                ["6. Processus (Process)", "Récolte aux heures fraîches du matin, tri qualitatif et conditionnement immédiat", "Mise en cagettes ventilées de 25 kg et expédition sous 24h vers les points de vente"],
+                ["7. Preuve Matérielle (Physical)", "Parcelle moderne équipée d'irrigation goutte-à-goutte, aire de conditionnement propre", "Cagettes siglées assurant la traçabilité de l'exploitation maraîchère"]
+            ]
+        elif sec_id == "clinique":
+            rows = [
+                ["1. Produit (Product)", f"Prestations de diagnostic médical & analyses : {profile.products[0].name}", "Exactitude des résultats biologiques, réactifs étalonnés et délais de rendu rapides"],
+                ["2. Prix (Price)", f"Grille tarifaire conventionnée et accessible : de {p1_price:,.0f} à {p_last_price:,.0f} {currency}".replace(",", " "), "Alignement sur la nomenclature médicale avec prise en charge mutuelles/assurances"],
+                ["3. Distribution (Place)", "Implantation dans une zone urbaine à forte densité et facile d'accès", "Locaux climatisés, box de prélèvement individuels et accessibilité PMR"],
+                ["4. Promotion (Promotion)", "Partenariats avec médecins prescripteurs, cliniques partenaires et comités d'entreprises", "Campagnes de dépistage préventif et présence digitale d'information santé"],
+                ["5. Personnel (People)", "Médecin/Biologiste, techniciens supérieurs de laboratoire et infirmiers diplômés", "Accueil bienveillant, écoute active, respect du secret médical et déontologie"],
+                ["6. Processus (Process)", "Accueil, enregistrement informatisé, prélèvement stérile, analyse et validation biologique", "Résultats disponibles en ligne ou par SMS sécurisé sous 2h"],
+                ["7. Preuve Matérielle (Physical)", "Plateau technique moderne, automates sous contrat de maintenance, hygiène irréprochable", "Certificats de conformité sanitaire et gestion sécurisée des déchets DASRI"]
+            ]
+        elif sec_id == "aviculture":
+            rows = [
+                ["1. Produit (Product)", f"Poulets de chair vivants et éviscérés prêts à cuire : {profile.products[0].name}", "Poids moyen 1.8-2.0 kg à 45 jours, chair ferme, plumage propre et conformité sanitaire"],
+                ["2. Prix (Price)", f"Positionnement compétitif : de {p1_price:,.0f} à {p_last_price:,.0f} {currency}".replace(",", " "), "Tarifs de gros incitatifs pour grossistes et revendeurs avec marge brute protectrice"],
+                ["3. Distribution (Place)", "Canaux mixtes : enlèvement direct à la ferme, marchés de gros urbains, rôtisseries", "Organisation de livraisons groupées en caisses d'abattage ventilées"],
+                ["4. Promotion (Promotion)", "Démarchage direct des marchés de volailles, rôtisseurs, hôtels, restaurants et supermarchés", "Accords d'approvisionnement exclusifs et communication digitale de marque locale"],
+                ["5. Personnel (People)", "Équipe d'élevage expérimentée, suivie par un vétérinaire conseil mandaté", "Surveillance permanente des poulaillers, respect du vide sanitaire et de la biosécurité"],
+                ["6. Processus (Process)", "Alimentation rigoureuse par phase de croissance (démarrage, croissance, finition)", "Pesées hebdomadaires, respect strict du plan de prophylaxie et traçabilité des lots"],
+                ["7. Preuve Matérielle (Physical)", "Bâtiments d'élevage modernes bien ventilés, sas de désinfection et registre d'élevage", "Certificats sanitaires vétérinaires délivrés à chaque sortie de bande"]
+            ]
+        else:
+            rows = [
+                ["1. Produit (Product)", f"Gamme professionnelle adaptée au marché : {profile.products[0].name}", "Qualité certifiée, fiabilité d'usage et packaging valorisant"],
+                ["2. Prix (Price)", f"Positionnement compétitif : de {p1_price:,.0f} à {p_last_price:,.0f} {currency}".replace(",", " "), "Pénétration rapide tout en préservant une marge brute protectrice"],
+                ["3. Distribution (Place)", "Canaux mixtes : points de vente directs, réseaux partenaires et grossistes", "Couverture efficace des zones urbaines à fort potentiel commercial"],
+                ["4. Promotion (Promotion)", "Marketing digital, prospection directe et salons professionnels", "Visibilité immédiate et acquisition rapide de parts de marché"],
+                ["5. Personnel (People)", "Équipe commerciale formée aux techniques de vente et relation client", "Conseil expert et fidélisation de la clientèle locale"],
+                ["6. Processus (Process)", "Commandes digitalisées, gestion de stock réactive et facturation instantanée", "Expérience d'achat fluide et sans friction"],
+                ["7. Preuve Matérielle (Physical)", "Aménagement moderne, conformité aux normes et réassurance client", "Garantie de confiance et sérieux institutionnel"]
+            ]
         cls._write_table_data(ws, 5, 2, rows)
 
         # Indicateurs d'Acquisition Client (CAC & LTV)
@@ -327,7 +413,45 @@ class ExcelReportGenerator:
             cls._style_header_cell(cell)
 
         is_comm = (m or {}).get("is_commercial", False)
-        if is_comm:
+        sec_id = getattr(profile, "sector_id", "")
+
+        if sec_id == "transport":
+            rows = [
+                ["Mois 1", "Constitution juridique de la société, obtention licence de transport & formalités fiscales", "Direction / Notaire", "Semaines 1-4", "Statuts, RCCM, Licence d'exploitation transport"],
+                ["Mois 2", "Aménagement de la base logistique, bureaux d'exploitation & parking sécurisé", "Direction / Travaux", "Semaines 5-8", "Base opérationnelle & parking clôturé"],
+                ["Mois 3", "Acquisition des 5 camions porteurs 10t, immatriculations & pose balises GPS", "Responsable Flotte", "Semaines 9-12", "5 camions réceptionnés, immatriculés & équipés GPS"],
+                ["Mois 4", "Recrutement des 5 chauffeurs routiers, tests d'aptitude à la conduite & formation éco-conduite", "Resp. Exploitation", "Semaines 13-16", "Équipe de chauffeurs qualifiée & habilitée"],
+                ["Mois 5", "Campagne commerciale B2B, signature contrats de fret & tournées inaugurales", "Commercial / Resp. Flotte", "Semaines 17-20", "Premiers contrats de fret exécutés"],
+                ["Mois 6 à 12", "Exploitation plein régime, suivi rentabilité kilométrique & entretien flotte", "Comptable / Resp. Flotte", "Semaines 21-52", "Rapports de marge kilométrique mensuels"]
+            ]
+        elif sec_id == "agriculture":
+            rows = [
+                ["Mois 1", "Acquisition foncière/bail rural, formalités administratives & bornage de la parcelle", "Promoteur / Notaire", "Semaines 1-4", "Bail notarié & terrain sécurisé"],
+                ["Mois 2", "Forage d'eau profond, motopompe, château d'eau & clôture grillagée", "Entreprise Hydraulique", "Semaines 5-8", "Point d'eau pérenne opérationnel"],
+                ["Mois 3", "Préparation du sol (labour, hersage, billonnage) & pose du réseau goutte-à-goutte", "Agronome / Techniciens", "Semaines 9-12", "Réseau d'irrigation testé et fonctionnel"],
+                ["Mois 4", "Mise en place de la pépinière de tomates, repiquage & fertilisation de fond", "Agronome / Ouvriers", "Semaines 13-16", "Parcelle plantée et tuteurée"],
+                ["Mois 5", "Conduite de la culture, fertigation, traitements phytosanitaires & premières récoltes", "Agronome / Équipe", "Semaines 17-20", "Premières cagettes de tomates récoltées"],
+                ["Mois 6 à 12", "Récoltes continues en pleine saison, livraison des clients & 2e cycle cultural", "Responsable Ventes / Équipe", "Semaines 21-52", "Bilan de campagne et rotation des cultures"]
+            ]
+        elif sec_id == "clinique":
+            rows = [
+                ["Mois 1", "Constitution de la société, obtention de l'agrément ministériel & autorisation d'exercer", "Biologiste Directeur / Notaire", "Semaines 1-4", "Agrément Ministère Santé, RCCM"],
+                ["Mois 2", "Aménagement des locaux médicaux, salle d'attente, box de prélèvement & paillasses", "Architecte / Promoteur", "Semaines 5-8", "Locaux conformes aux normes sanitaires"],
+                ["Mois 3", "Acquisition, livraison et installation des automates de biochimie et hématologie", "Fournisseurs Médicaux", "Semaines 9-12", "Automates installés et raccordés"],
+                ["Mois 4", "Calibrage des analyseurs, tests sur sérums de contrôle & recrutement du personnel", "Biologiste / Techniciens", "Semaines 13-16", "Contrôles qualité validés & équipe formée"],
+                ["Mois 5", "Inauguration, ouverture officielle au public & signature conventions mutuelles", "Direction / Accueil", "Semaines 17-20", "Premiers patients accueillis et analysés"],
+                ["Mois 6 à 12", "Exploitation continue, audit qualité semestriel et fidélisation prescripteurs", "Biologiste / Comptable", "Semaines 21-52", "Rapports d'activité médicale mensuels"]
+            ]
+        elif sec_id == "aviculture":
+            rows = [
+                ["Mois 1", "Constitution de la société, formalités d'implantation & plan de biosécurité", "Promoteur / Vétérinaire", "Semaines 1-4", "Statuts, RCCM & autorisation environnementale"],
+                ["Mois 2", "Construction et aménagement des poulaillers modernes, radiants & ventilation", "Artisan / Éleveur", "Semaines 5-8", "Bâtiments d'élevage réceptionnés & désinfectés"],
+                ["Mois 3", "Installation des lignes d'abreuvement automatique et mangeoires trémies", "Technicien Équipement", "Semaines 9-12", "Système d'eau et alimentation opérationnel"],
+                ["Mois 4", "Achat du 1er lot de 5 000 poussins d'un jour, démarrage & plan prophylactique", "Vétérinaire / Éleveurs", "Semaines 13-16", "Phase de démarrage réussie (mortalité < 2%)"],
+                ["Mois 5", "Phase de finition, enlèvement et commercialisation du premier cycle de poulets", "Responsable Ventes", "Semaines 17-20", "28 500 poulets commercialisés sur l'année"],
+                ["Mois 6 à 12", "Enchaînement des 5 cycles suivants avec vide sanitaire rigoureux de 15 jours", "Direction / Vétérinaire", "Semaines 21-52", "6 cycles annuels menés à terme avec succès"]
+            ]
+        elif is_comm:
             rows = [
                 ["Mois 1", "Constitution juridique de la société & formalités fiscales", "Promoteur / Notaire", "Semaines 1-4", "Statuts notariés, RCCM, Déclaration fiscale"],
                 ["Mois 2", "Aménagement du local commercial / boutique et vitrines", "Gérant / Agenceur", "Semaines 5-8", "Boutique opérationnelle & sécurisée"],
@@ -338,11 +462,11 @@ class ExcelReportGenerator:
             ]
         else:
             rows = [
-                ["Mois 1", "Constitution juridique de la société & formalités fiscales", "Promoteur / Notaire", "Semaines 1-4", "Statuts notariés, RCCM, Déclaration fiscale"],
-                ["Mois 2", "Aménagement du local de production aux normes d'hygiène", "Chef d'Atelier", "Semaines 5-8", "Atelier prêt & sécurisé"],
-                ["Mois 3", "Acquisition, livraison et installation des équipements", "Fournisseur / Promoteur", "Semaines 9-12", "Machines installées et testées"],
-                ["Mois 4", "Tests de production, recettes & formation des opérateurs", "Responsable Qualité", "Semaines 13-16", "Lots tests conformes aux normes"],
-                ["Mois 5", "Campagne de lancement commercial & distribution", "Responsable Ventes", "Semaines 17-20", "Premières commandes livrées"],
+                ["Mois 1", "Constitution juridique de la société & formalités administratives", "Promoteur / Notaire", "Semaines 1-4", "Statuts notariés, RCCM, Déclaration fiscale"],
+                ["Mois 2", "Aménagement du site d'exploitation aux normes professionnelles", "Chef d'Atelier", "Semaines 5-8", "Site prêt & sécurisé"],
+                ["Mois 3", "Acquisition, livraison et installation des équipements", "Fournisseur / Promoteur", "Semaines 9-12", "Équipements installés et testés"],
+                ["Mois 4", "Tests opérationnels, mise en route & formation des opérateurs", "Responsable Qualité", "Semaines 13-16", "Tests concluants conformes aux standards"],
+                ["Mois 5", "Campagne de lancement commercial & premières livraisons", "Responsable Ventes", "Semaines 17-20", "Premières commandes exécutées"],
                 ["Mois 6 à 12", "Plein régime de croisière et suivi de trésorerie", "Comptable / Direction", "Semaines 21-52", "Rapports d'activité mensuels"]
             ]
         cls._write_table_data(ws, 5, 2, rows)

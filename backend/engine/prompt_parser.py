@@ -16,88 +16,102 @@ class PromptParser:
         text = prompt.strip()
         lower = text.lower()
 
-        # 1. Extraction de la Raison Sociale / Nom du projet
-        company_name = cls._extract_company_name(text)
+        # 1. Détection chirurgicale du secteur d'activité par scoring multi-mots d'abord
+        sector_id, sector_name = cls._detect_sector_scored(lower)
 
-        # 2. Extraction du Pays et de la Localisation
-        country = cls._extract_country(text, default_country)
+        # 2. Extraction de la Raison Sociale / Nom du projet adaptée
+        company_name = cls._extract_company_name(text, sector_id=sector_id)
+
+        # 3. Extraction du Pays et de la Localisation
+        country, has_explicit_country = cls._extract_country(text, default_country)
         location = cls._extract_location(text, country)
 
-        # 3. Extraction de la Devise
+        # 4. Extraction de la Devise
         currency = cls._extract_currency(text, default_currency)
 
-        # 4. Extraction des paramètres de financement (Apport, Emprunt, Taux, Durée)
-        equity_ratio, loan_ratio = cls._extract_financing_split(text)
-        loan_interest_rate = cls._extract_interest_rate(text)
+        # 5. Extraction des paramètres de financement (Apport, Emprunt, Taux, Durée)
+        equity_ratio, loan_ratio, has_explicit_financing = cls._extract_financing_split(text)
+        loan_interest_rate, has_explicit_interest_rate = cls._extract_interest_rate(text)
         loan_duration_years = cls._extract_loan_duration(text)
 
-        # 5. Extraction de l'horizon prévisionnel
+        # 6. Extraction de l'horizon prévisionnel
         horizon_years = cls._extract_horizon_years(text)
 
-        # 6. Extraction du budget ou investissement
+        # 7. Extraction du budget ou investissement
         total_budget = cls._extract_budget(text)
-
-        # 7. Détection chirurgicale du secteur d'activité par scoring multi-mots
-        sector_id, sector_name = cls._detect_sector_scored(lower)
 
         # 8. Extraction de la capacité et données opérationnelles
         capacity_info = cls._extract_capacity(text)
+        fleet_ops = cls._extract_fleet_and_operations(text)
 
         return {
             "company_name": company_name,
             "country": country,
+            "has_explicit_country": has_explicit_country,
             "location": location,
             "currency": currency,
             "sector_id": sector_id,
             "sector_name": sector_name,
             "equity_ratio": equity_ratio,
             "loan_ratio": loan_ratio,
+            "has_explicit_financing": has_explicit_financing,
             "loan_interest_rate": loan_interest_rate,
+            "has_explicit_interest_rate": has_explicit_interest_rate,
             "loan_duration_years": loan_duration_years,
             "horizon_years": horizon_years,
             "total_budget": total_budget,
             "capacity_info": capacity_info,
+            "fleet_ops": fleet_ops,
             "raw_prompt": text
         }
 
     @classmethod
-    def _extract_company_name(cls, text: str) -> str:
-        """Extrait un nom d'entreprise ou de projet court et valorisant."""
-        # Recherche explicite "Nom du projet : XYZ" ou "Raison sociale : XYZ"
-        m = re.search(r'(?:nom\s+du\s+projet|raison\s+sociale|nom\s+de\s+l[\'’]entreprise|entreprise|projet)\s*[:=-]\s*([^\n\r,.;]+)', text, re.I)
-        if m:
-            cand = m.group(1).strip()
-            # Nettoyer les balises Markdown éventuelles
-            cand = re.sub(r'[*_#]', '', cand).strip()
+    def _extract_company_name(cls, text: str, sector_id: str = "") -> str:
+        """Extrait un nom d'entreprise ou de projet court, précis et valorisant."""
+        # 1. Recherche explicite ancrée par ligne "Nom de l'entreprise : XYZ" ou "Nom du projet : XYZ"
+        m_line = re.search(r'^[ \t]*[-*•]?[ \t]*(?:nom\s+(?:du\s+projet|de\s+l[\'’]entreprise)|raison\s+sociale)[ \t]*[:=-][ \t]*([^\r\n]+)', text, re.I | re.M)
+        if m_line:
+            cand = re.sub(r'[*_#]', '', m_line.group(1)).strip()
+            # Nettoyer d'éventuels suffixes parasites
+            cand = re.sub(r'\s*\(.*?\)', '', cand).strip()
             if 3 <= len(cand) <= 60 and not re.match(r'^(?:génère|crée|fais|donne|un|le|mon)\b', cand, re.I):
                 return cand
 
-        # Recherche de mentions types SARL / SAS / SUARL / GIE / Ferme / Clinique
-        m_legal = re.search(r'\b([A-ZÀ-ÿ0-9\s&\'\-]+(?:\s+(?:SARL|SAS|SUARL|SA|GIE|GROUP|SERVICES|PLUS|AGRO)))\b', text)
+        # 2. Recherche de mentions juridiques explicites SARL / SAS / SUARL / GIE / LOGISTICS
+        m_legal = re.search(r'\b([A-ZÀ-ÿ0-9][A-ZÀ-ÿ0-9\s&\'\-]{2,35}\s+(?:SARL|SAS|SUARL|SA|GIE|GROUP|SERVICES|PLUS|AGRO|LOGISTICS))\b', text)
         if m_legal:
             cand = m_legal.group(1).strip()
-            if 3 <= len(cand) <= 45:
+            cand = re.sub(r'^(?:nom\s+(?:du\s+projet|de\s+l[\'’]entreprise)|raison\s+sociale)\s*[:=-]\s*', '', cand, flags=re.I).strip()
+            if 3 <= len(cand) <= 50:
                 return cand
 
-        # Recherche d'expression "création d'une ferme avicole moderne"
+        # 3. Recherche de création d'activité ("création d'une entreprise de transport...")
         m_proj = re.search(r'(?:création|mise\s+en\s+place|lancement|développement)\s+(?:d[\'’]une?|de\s+la)\s+([^\n\r,.;]+)', text, re.I)
         if m_proj:
             cand = m_proj.group(1).strip()
             cand = re.sub(r'[*_#]', '', cand).strip()
             cand = re.sub(r'\s+(?:spécialisée|au|en|dans|à|sur|avec|pour).*$', '', cand, flags=re.I).strip()
-            if 4 <= len(cand) <= 50:
+            if 4 <= len(cand) <= 45:
                 words = [w.capitalize() for w in cand.split()]
-                return " ".join(words)
+                return " ".join(words) + " SARL"
 
-        return "AVICOLA PLUS SARL"
+        defaults = {
+            "transport": "SEN TRANS LOGISTICS SARL",
+            "aviculture": "AVICOLA PLUS SARL",
+            "agriculture": "AGRI FERME MODERNE SARL",
+            "plantation_cacao": "CACAO EXCELLENCE SARL",
+            "clinique": "POLYCLINIQUE ET BIOLOGIE SARL",
+            "magasin_jouets": "AFRIQUE DISTRIBUTION SARL"
+        }
+        return defaults.get(sector_id, "ENTREPRISE AGRO-INDUSTRIE SARL")
 
     @classmethod
-    def _extract_country(cls, text: str, default_country: str) -> str:
-        """Détecte avec précision le pays d'implantation africain."""
+    def _extract_country(cls, text: str, default_country: str) -> (str, bool):
+        """Détecte avec précision le pays d'implantation africain et signale si la mention est explicite."""
         countries = [
             ("Cameroun", ["cameroun", "cameroon", "douala", "yaoundé", "yaounde", "bafoussam", "garoua", "littoral"]),
             ("Côte d'Ivoire", ["côte d'ivoire", "cote d'ivoire", "abidjan", "yamoussoukro", "san pedro", "bouaké", "bouake", "korhogo"]),
-            ("Sénégal", ["sénégal", "senegal", "dakar", "thies", "thiès", "saint-louis", "touba", "ziguinchor"]),
+            ("Sénégal", ["sénégal", "senegal", "dakar", "thies", "thiès", "saint-louis", "touba", "ziguinchor", "kaolack", "mbour"]),
             ("Bénin", ["bénin", "benin", "cotonou", "porto-novo", "parakou", "calavi"]),
             ("Togo", ["togo", "lomé", "lome", "kara", "kpalimé"]),
             ("Burkina Faso", ["burkina", "ouagadougou", "bobo-dioulasso"]),
@@ -111,8 +125,8 @@ class PromptParser:
         for c_name, keywords in countries:
             for kw in keywords:
                 if re.search(r'\b' + re.escape(kw) + r'\b', lower):
-                    return c_name
-        return default_country
+                    return c_name, True
+        return default_country, False
 
     @classmethod
     def _extract_location(cls, text: str, country: str) -> str:
@@ -154,28 +168,31 @@ class PromptParser:
         return default_currency or "FCFA"
 
     @classmethod
-    def _extract_financing_split(cls, text: str) -> (float, float):
+    def _extract_financing_split(cls, text: str) -> (float, float, bool):
         """Extrait les pourcentages d'apport personnel et d'emprunt bancaire."""
         eq_ratio = None
         loan_ratio = None
+        has_explicit = False
 
-        # Ordre 1: "apport personnel : 30%" ou "fonds propres 25%"
+        # Ordre 1: "apport personnel : 35%" ou "fonds propres 30%"
         m_eq1 = re.search(r'(?:apport\s+(?:personnel|promoteur|fonds\s+propres?)|fonds\s+propres?)\s*[:=-]?\s*(?:de\s*)?(\d+(?:[.,]\d+)?)\s*%', text, re.I)
-        # Ordre 2: "30% d'apport" ou "25 % fonds propres"
+        # Ordre 2: "35% d'apport" ou "35 % fonds propres"
         m_eq2 = re.search(r'(\d+(?:[.,]\d+)?)\s*%\s*(?:d[\'’]apport|fonds\s+propres?|apport\s+personnel)', text, re.I)
         m_eq = m_eq1 or m_eq2
         if m_eq:
             eq_val = float(m_eq.group(1).replace(',', '.'))
             eq_ratio = eq_val / 100.0 if eq_val > 1 else eq_val
+            has_explicit = True
 
-        # Ordre 1: "emprunt bancaire : 70%" ou "crédit 75%"
+        # Ordre 1: "emprunt bancaire : 65%" ou "crédit 70%"
         m_loan1 = re.search(r'(?:emprunt\s+(?:bancaire)?|crédit\s+(?:bancaire)?|prêt\s+(?:bancaire)?|financement\s+bancaire)\s*[:=-]?\s*(?:de\s*)?(\d+(?:[.,]\d+)?)\s*%', text, re.I)
-        # Ordre 2: "70% d'emprunt" ou "75 % crédit bancaire"
+        # Ordre 2: "65% d'emprunt" ou "65 % crédit bancaire"
         m_loan2 = re.search(r'(\d+(?:[.,]\d+)?)\s*%\s*(?:d[\'’]emprunt|d[\'’]endettement|crédit\s+bancaire|emprunt\s+bancaire|dette\s+bancaire)', text, re.I)
         m_loan = m_loan1 or m_loan2
         if m_loan:
             loan_val = float(m_loan.group(1).replace(',', '.'))
             loan_ratio = loan_val / 100.0 if loan_val > 1 else loan_val
+            has_explicit = True
 
         # Cohérence et complétion
         if eq_ratio is not None and loan_ratio is None:
@@ -186,20 +203,21 @@ class PromptParser:
             eq_ratio = 0.30
             loan_ratio = 0.70
 
-        return round(eq_ratio, 2), round(loan_ratio, 2)
+        return round(eq_ratio, 2), round(loan_ratio, 2), has_explicit
 
     @classmethod
-    def _extract_interest_rate(cls, text: str) -> float:
-        """Extrait le taux d'intérêt annuel du crédit bancaire (ex: 12% ou 10%)."""
-        # Forme 1: "taux d'intérêt annuel de 12%" ou "taux de 10%"
-        m1 = re.search(r'taux\s+(?:d[\'’]int[ée]r[êe]t)?\s*(?:annuel)?\s*(?:de\s*|d[\'’]\s*|à\s*)?(\d+(?:[.,]\d+)?)\s*%', text, re.I)
-        # Forme 2: "crédit bancaire à 10 %" ou "emprunt à 8%"
-        m2 = re.search(r'(?:crédit|emprunt|prêt)\s+(?:bancaire\s+)?à\s*(\d+(?:[.,]\d+)?)\s*%', text, re.I)
-        m = m1 or m2
+    def _extract_interest_rate(cls, text: str) -> (float, bool):
+        """Extrait le taux d'intérêt annuel du crédit bancaire (ex: 11%, 10% ou 9.5%)."""
+        m = re.search(
+            r'(?:taux\s+(?:d[\'’](?:int[ée]r[êe]t|emprunt))?\s*(?:annuel)?\s*[:=-]?\s*(?:de\s*|d[\'’]\s*|à\s*)?|\b(?:au\s+taux\s+de\s*|à\s+))(\d+(?:[.,]\d+)?)\s*%',
+            text,
+            re.I
+        )
         if m:
             val = float(m.group(1).replace(',', '.'))
-            return val / 100.0 if val > 1 else val
-        return 0.12  # Défaut bancaire standard PME zone CFA : 12%
+            rate = val / 100.0 if val > 1 else val
+            return rate, True
+        return 0.12, False
 
     @classmethod
     def _extract_loan_duration(cls, text: str) -> int:
@@ -250,12 +268,36 @@ class PromptParser:
         return None
 
     @classmethod
+    def _extract_fleet_and_operations(cls, text: str) -> Dict[str, Any]:
+        """Extrait les éléments opérationnels spécifiques (camions, surface, cheptel, etc.)."""
+        ops: Dict[str, Any] = {}
+        # Flotte camions: "5 camions porteurs de 10 tonnes" ou "5 camions"
+        m_cam = re.search(r'(\d+)\s+camions?(?:\s+porteurs?)?(?:\s+de\s+(\d+)\s+tonnes?)?', text, re.I)
+        if m_cam:
+            ops["truck_count"] = int(m_cam.group(1))
+            if m_cam.group(2):
+                ops["truck_tonnage"] = int(m_cam.group(2))
+        # Surface agricole: "1 hectare" ou "2 hectares"
+        m_ha = re.search(r'(\d+(?:[.,]\d+)?)\s*hectares?\b', text, re.I)
+        if m_ha:
+            ops["hectares"] = float(m_ha.group(1).replace(',', '.'))
+        # Poussins / Sujets: "5 000 poussins"
+        m_poussins = re.search(r'(\d[\d\s]*)\s*(?:poussins?|poulets?|sujets?)\b', text, re.I)
+        if m_poussins:
+            digits = re.sub(r'\s+', '', m_poussins.group(1))
+            if digits.isdigit():
+                ops["bird_count"] = int(digits)
+        return ops
+
+    @classmethod
     def _detect_sector_scored(cls, lower: str) -> (str, str):
         """
         Détection rigoureuse par pondération lexicale et exclusions grammaticales.
         Évite TOUTE collision de sous-chaîne (comme 'soins' dans 'besoins').
         """
         scores: Dict[str, int] = {
+            "transport": 0,
+            "agriculture": 0,
             "aviculture": 0,
             "plantation_cacao": 0,
             "pisciculture": 0,
@@ -267,7 +309,6 @@ class PromptParser:
             "restaurant": 0,
             "quincaillerie": 0,
             "magasin_jouets": 0,
-            "transport": 0,
             "clinique": 0,
             "pharmacie": 0,
             "numerique_saas": 0,
@@ -278,10 +319,24 @@ class PromptParser:
 
         # Dictionnaires de mots-clés stricts avec détection mot entier
         lexicon = {
+            "transport": [
+                r'\btransport\b', r'\btransports\b', r'\blogistique\b', r'\bfret\b',
+                r'\bflotte\b', r'\bcamion[s]?\b', r'\bporteur[s]?\b', r'\btonnes?\b',
+                r'\blivraison[s]?\b', r'\btrajet[s]?\b', r'\bchauffeur[s]?\b',
+                r'\bcorridor[s]?\b', r'\bpéage[s]?\b', r'\binterurbain\b', r'\burbain\b',
+                r'\bcarburant\b', r'\bgasoil\b', r'\bréseau routier\b'
+            ],
+            "agriculture": [
+                r'\btomate[s]?\b', r'\bmara[îi]chage\b', r'\bmara[îi]ch[eè]re?[s]?\b',
+                r'\blégume[s]?\b', r'\bhectare[s]?\b', r'\birrigation\b',
+                r'\bgoutte[- ]à[- ]goutte\b', r'\bmotopompe[s]?\b', r'\bsemence[s]?\b',
+                r'\bengrais\b', r'\bphytosanitaire[s]?\b', r'\brécolte[s]?\b',
+                r'\bagronome\b', r'\bparcelle[s]?\b', r'\bculture maraîchère\b'
+            ],
             "aviculture": [
                 r'\bpoulet[s]?\b', r'\bpoussin[s]?\b', r'\bvolaille[s]?\b', r'\bavicole[s]?\b',
-                r'\baviculture\b', r'\bpoulailler[s]?\b', r'\bgésier[s]?\b', r'\bélevage\b',
-                r'\bcouvoir[s]?\b', r'\bengraissement\b', r'\bchair\b', r'\bpondeuse[s]?\b'
+                r'\baviculture\b', r'\bpoulailler[s]?\b', r'\bgésier[s]?\b',
+                r'\bcouvoir[s]?\b', r'\bengraissement\b', r'\bpoulet(?:s)?\s+de\s+chair\b', r'\bpondeuse[s]?\b'
             ],
             "plantation_cacao": [
                 r'\bcacao\b', r'\bcacaoy(?:er|ère|ere|ers)\b', r'\bfève[s]?\b', r'\bfeve[s]?\b',
@@ -321,11 +376,11 @@ class PromptParser:
             "magasin_jouets": [
                 r'\bjouet[s]?\b', r'\bludique[s]?\b', r'\bpeluche[s]?\b', r'\bpoupée[s]?\b', r'\bjeux éducatifs\b'
             ],
-            "transport": [
-                r'\btransport\b', r'\blogistique\b', r'\bflotte\b', r'\bcamion[s]?\b', r'\blivraison frigorifique\b'
-            ],
             "clinique": [
                 r'\bclinique[s]?\b', r'\bcabinet médical\b', r'\bhôpital\b', r'\bhopital\b',
+                r'\blaboratoire\b', r'\banalyses médicales\b', r'\bbiologie médicale\b',
+                r'\bhématologie\b', r'\bbiochimie\b', r'\bautomate[s]?\b', r'\bprélèvement[s]?\b',
+                r'\bréactifs\b', r'\bcentrifugeuse\b', r'\bmicroscope\b',
                 r'\bdocteur[s]?\b', r'\bmédecin[s]?\b', r'\bdispensaire\b', r'\bhospitalisation[s]?\b',
                 r'\bconsultation(?:s)? médicale(?:s)?\b',
                 # MOT 'soins' SEULEMENT S'IL N'EST PAS PRÉCÉDÉ PAR 'be' (évite 'besoins')
@@ -358,16 +413,24 @@ class PromptParser:
         m_sec = re.search(r'secteur\s*[:=-]\s*([^\n\r,.;]+)', lower)
         if m_sec:
             sec_text = m_sec.group(1)
-            if any(w in sec_text for w in ["aviculture", "élevage", "elevage", "agriculture", "poulet", "chair"]):
-                scores["aviculture"] += 15
-            if any(w in sec_text for w in ["santé", "médical", "clinique", "soins"]):
-                scores["clinique"] += 15
+            if any(w in sec_text for w in ["transport", "logistique", "fret", "camion"]):
+                scores["transport"] += 25
+            if any(w in sec_text for w in ["tomate", "maraîchage", "maraichage", "légume"]):
+                scores["agriculture"] += 25
+            elif any(w in sec_text for w in ["agriculture"]) and not any(w in lower for w in ["poulet", "poussin", "volaille", "avicole"]):
+                scores["agriculture"] += 20
+            if any(w in sec_text for w in ["aviculture", "élevage", "elevage", "poulet", "chair", "volaille"]):
+                scores["aviculture"] += 25
+            if any(w in sec_text for w in ["santé", "médical", "clinique", "laboratoire", "soins", "biologie"]):
+                scores["clinique"] += 25
             if any(w in sec_text for w in ["commerce", "distribution", "jouet"]):
-                scores["magasin_jouets"] += 10
+                scores["magasin_jouets"] += 15
 
         best_sector = max(scores, key=scores.get)
         if scores[best_sector] > 0:
             names = {
+                "transport": "Transport Urbain, Interurbain & Logistique",
+                "agriculture": "Exploitation Maraîchère & Culture de Tomates",
                 "aviculture": "Élevage Avicole & Production de Poulets de Chair",
                 "plantation_cacao": "Exploitation Cacaoyère Moderne",
                 "pisciculture": "Pisciculture & Aquaculture Moderne",
@@ -379,8 +442,7 @@ class PromptParser:
                 "restaurant": "Restauration & Fast-Food Moderne",
                 "quincaillerie": "Quincaillerie & Matériaux de Construction",
                 "magasin_jouets": "Commerce de Détail & Distribution",
-                "transport": "Transport Urbain & Logistique",
-                "clinique": "Clinique Médicale & Centre de Soins",
+                "clinique": "Clinique Médicale & Laboratoire d'Analyses",
                 "pharmacie": "Pharmacie d'Officine & Santé",
                 "numerique_saas": "Solutions Numériques & Services IT",
                 "energie_solaire": "Énergie Solaire Photovoltaïque",
@@ -389,4 +451,4 @@ class PromptParser:
             }
             return best_sector, names.get(best_sector, "Entreprise Commerciale")
 
-        return "aviculture", "Ferme Avicole Moderne"
+        return "transport", "Entreprise de Services & Logistique"

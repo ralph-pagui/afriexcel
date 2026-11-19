@@ -119,7 +119,8 @@ export class OfficeService {
           // 2. Appel direct et prioritaire au moteur Python OHADA (20 feuilles bancables)
           onProgress?.(isModif ? "Recalcul financier complet via le moteur Python OHADA (20 feuilles)..." : "Calcul financier et modélisation via le moteur Python OHADA (20 feuilles)...");
           const pyPlan = await PythonBackendService.generateBusinessPlan({
-            prompt: action.productTopic || action.projectName || "business plan",
+            prompt: (action as any).rawPrompt || action.projectName || action.productTopic || "business plan",
+            country: (action as any).country,
             currency: action.currencySymbol || "FCFA",
             isModification: isModif
           });

@@ -370,11 +370,12 @@ ${userPrompt}`;
 
     if (isBpCreation || isBpModification) {
       try {
-        const previousTopic = previousBpAction?.productTopic || previousBpAction?.projectName || (
+        const previousTopic = isBpModification ? (previousBpAction?.productTopic || previousBpAction?.projectName || (
           hasBpSheetsInWorkbook ? "Plantation de Cacao" : undefined
-        );
-        const projectCountry = previousBpAction?.country || countryInfo?.name || "Côte d'Ivoire";
-        const projectCurrency = previousBpAction?.currencySymbol || countryInfo?.currencySymbol || "FCFA";
+        )) : undefined;
+        const projectCountry = isBpModification ? (previousBpAction?.country || countryInfo?.name || "Côte d'Ivoire") : (countryInfo?.name || "Côte d'Ivoire");
+        const projectCurrency = isBpModification ? (previousBpAction?.currencySymbol || countryInfo?.currencySymbol || "FCFA") : (countryInfo?.currencySymbol || "FCFA");
+        const effectiveTemplate = isBpModification ? (template_id || previousBpAction?.template_id || "auto") : (template_id || "auto");
 
         let finalPrompt = userPrompt;
         if (isBpModification && previousTopic && !userPrompt.toLowerCase().includes(previousTopic.toLowerCase())) {
@@ -385,7 +386,7 @@ ${userPrompt}`;
           prompt: finalPrompt,
           country: projectCountry,
           currency: projectCurrency,
-          template_id: template_id || previousBpAction?.template_id || "auto",
+          template_id: effectiveTemplate,
           isModification: isBpModification,
           previousTopic: previousTopic
         });
@@ -400,6 +401,8 @@ ${userPrompt}`;
                 type: actionType,
                 projectName: pyPlan.project_name,
                 productTopic: pyPlan.sector,
+                country: pyPlan.country,
+                rawPrompt: finalPrompt,
                 sheetCount: pyPlan.sheets_count,
                 projectType: isBpModification ? 'Modification' : 'Création',
                 currencySymbol: pyPlan.currency,

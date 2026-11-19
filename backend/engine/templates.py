@@ -156,60 +156,85 @@ TEMPLATE_CATALOG: Dict[str, ThemeConfig] = {
     )
 }
 
-def detect_or_get_template(template_id: str = None, prompt_text: str = "", activity_text: str = "") -> ThemeConfig:
+def detect_or_get_template(template_id: str = None, prompt_text: str = "", activity_text: str = "", sector_id: str = "") -> ThemeConfig:
     """
     Retourne le template sélectionné ou le détecte intelligemment selon le secteur
     sans jamais imposer de textes ou de sous-titres inappropriés.
     """
-    if template_id and template_id in TEMPLATE_CATALOG and template_id != "auto":
-        base_tpl = TEMPLATE_CATALOG[template_id]
-        return _adapt_template_text(base_tpl, prompt_text, activity_text)
-
-    # Détection sectorielle intelligente
     from .prompt_parser import PromptParser
     parsed = PromptParser.parse(prompt_text + " " + activity_text)
-    sec_id = parsed.get("sector_id", "aviculture")
+    effective_sec_id = sector_id or parsed.get("sector_id", "transport")
 
-    agro_sectors = ["aviculture", "plantation_cacao", "pisciculture", "jus", "chocolaterie", "savonnerie"]
+    if template_id and template_id in TEMPLATE_CATALOG and template_id != "auto":
+        base_tpl = TEMPLATE_CATALOG[template_id]
+        return _adapt_template_text(base_tpl, prompt_text, activity_text, effective_sec_id)
+
+    # Sélection du thème de design selon la nature du projet
+    agro_sectors = ["aviculture", "agriculture", "plantation_cacao", "pisciculture", "jus", "chocolaterie", "savonnerie"]
     tech_sectors = ["numerique_saas", "energie_solaire"]
     commerce_sectors = ["magasin_jouets", "quincaillerie", "restaurant", "textile", "boulangerie"]
-    corp_sectors = ["clinique", "pharmacie", "btp", "transport", "education"]
+    corp_sectors = ["transport", "clinique", "pharmacie", "btp", "education"]
 
-    if sec_id in agro_sectors:
+    if effective_sec_id in agro_sectors:
         chosen_id = "emerald_africa"
-    elif sec_id in tech_sectors:
+    elif effective_sec_id in tech_sectors:
         chosen_id = "cyber_indigo"
-    elif sec_id in commerce_sectors:
+    elif effective_sec_id in commerce_sectors:
         chosen_id = "sahara_commerce"
-    elif sec_id in corp_sectors:
+    elif effective_sec_id in corp_sectors:
         chosen_id = "royal_navy"
     else:
-        chosen_id = "emerald_africa"
+        chosen_id = "royal_navy"
 
     base_tpl = TEMPLATE_CATALOG[chosen_id]
-    return _adapt_template_text(base_tpl, prompt_text, activity_text, sec_id)
+    return _adapt_template_text(base_tpl, prompt_text, activity_text, effective_sec_id)
 
 def _adapt_template_text(base: ThemeConfig, prompt_text: str, activity_text: str, sector_id: str = "") -> ThemeConfig:
-    """Adapte dynamiquement le sous-titre, slogan et vision au secteur spécifique."""
+    """Adapte dynamiquement le sous-titre, slogan et vision au secteur spécifique sans aucune contamination."""
     import copy
     tpl = copy.deepcopy(base)
 
     txt = (prompt_text + " " + activity_text).lower()
-    if "avicol" in txt or "poulet" in txt or "volaille" in txt or sector_id == "aviculture":
+
+    # 1. Transport & Logistique de marchandises
+    if sector_id == "transport" or any(w in txt for w in ["transport", "fret", "logistique", "camion", "camions"]):
+        tpl.subtitle = "Transport Routier, Interurbain & Fret Logistique"
+        tpl.tagline = "Connecter les corridors économiques avec rapidité, sécurité et fiabilité"
+        tpl.vision_quote = "Devenir le partenaire logistique de référence pour le transport de marchandises en Afrique de l'Ouest."
+
+    # 2. Agriculture maraîchère & Tomates
+    elif sector_id == "agriculture" or any(w in txt for w in ["tomate", "maraîchage", "maraichage", "légume", "hectare", "irrigation"]):
+        tpl.subtitle = "Agro-Business, Maraîchage & Cultures Maraîchères Durables"
+        tpl.tagline = "Valoriser la terre africaine par des cultures saines, productives et locales"
+        tpl.vision_quote = "Garantir un approvisionnement régulier en légumes frais et de qualité supérieure aux marchés locaux."
+
+    # 3. Santé, Clinique & Laboratoire d'analyses
+    elif sector_id == "clinique" or any(w in txt for w in ["clinique", "médical", "medical", "laboratoire", "analyse", "analyses", "biologie", "soins"]):
+        tpl.subtitle = "Santé, Biologie Médicale & Analyses de Proximité"
+        tpl.tagline = "Précision diagnostique, excellence clinique et accessibilité des soins"
+        tpl.vision_quote = "Offrir un plateau technique médical de pointe garantissant des diagnostics fiables et bienveillants."
+
+    # 4. Élevage Avicole (strictement si aviculture)
+    elif sector_id == "aviculture" or any(w in txt for w in ["poulet", "poussin", "volaille", "avicole", "couvoir"]):
         tpl.subtitle = "Élevage Avicole & Production de Volailles de Chair"
         tpl.tagline = "Excellence agro-pastorale, traçabilité et disponibilité locale continue"
         tpl.vision_quote = "Bâtir une filière avicole moderne et souveraine au service de l'alimentation de qualité."
-    elif "cacao" in txt or sector_id == "plantation_cacao":
+
+    # 5. Cacao & Agro-foresterie
+    elif sector_id == "plantation_cacao" or "cacao" in txt:
         tpl.subtitle = "Exploitation Cacaoyère & Filière d'Excellence"
         tpl.tagline = "Valoriser le terroir africain avec des fèves de qualité supérieure"
         tpl.vision_quote = "Produire durablement en alliant rentabilité agro-écologique et qualité export."
-    elif "clinique" in txt or "médical" in txt or sector_id == "clinique":
-        tpl.subtitle = "Santé, Soins Médicaux & Analyses de Proximité"
-        tpl.tagline = "L'accès à des soins d'excellence et une médecine préventive moderne"
-        tpl.vision_quote = "Offrir une prise en charge médicale bienveillante, rigoureuse et accessible."
-    elif "jouet" in txt or sector_id == "magasin_jouets":
+
+    # 6. Jouets & Commerce
+    elif sector_id == "magasin_jouets" or "jouet" in txt:
         tpl.subtitle = "Commerce de Détail, Jouets & Éveil Enfants"
         tpl.tagline = "Éveiller l'imaginaire et accompagner l'épanouissement des enfants"
         tpl.vision_quote = "Devenir la référence incontournable du jeu éducatif de qualité."
+
+    else:
+        tpl.subtitle = "Entreprise Commerciale & Prestations de Services"
+        tpl.tagline = "Rigueur opérationnelle, performance financière et pérennité"
+        tpl.vision_quote = "Développer un modèle d'affaires solide, rentable et générateur d'emplois durables."
 
     return tpl
