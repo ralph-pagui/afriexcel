@@ -215,7 +215,91 @@ export class BusinessPlanService {
       };
     }
 
-    // 3. Commerce, Boutique, Jouets & Retail par défaut
+    // 3. Énergie Solaire Photovoltaïque & Renouvelable
+    if (text.includes('solaire') || text.includes('photovolta') || text.includes('panneau') || text.includes('onduleur') || text.includes('renouvelable') || text.includes('énergie') || text.includes('energie')) {
+      return {
+        activity: "Conception, distribution et installation de solutions solaires photovoltaïques",
+        unit: "Kit solaire / Installation",
+        sector: "tech",
+        products: [
+          [1, "Système Solaire Résidentiel Hybride (3 kWc)", "Kit solaire autonome résidentiel avec batteries lithium LiFePO4", 0.40, 2800000],
+          [2, "Centrale Solaire Commerciale PME (10 kWc)", "Centrale triphasée pour commerces, onduleur réseau et secours batterie", 0.35, 7500000],
+          [3, "Installation Solaire Professionnelle (30 kWc)", "Installation toiture haute puissance pour cliniques, hôtels et exploitations", 0.20, 18500000],
+          [4, "Contrat de Maintenance Préventive & Télé-surveillance", "Contrat annuel de thermographie, nettoyage modules et révision onduleur", 0.05, 350000]
+        ],
+        equipment: [
+          ["Véhicule utilitaire d'intervention terrain avec échelle de toit", 8500000, 5, 0.20],
+          ["Banc de test photovoltaïque, analyseurs de réseau & multimètres certifiés", 3000000, 4, 0.25],
+          ["Équipements de sécurité travail en hauteur (harnais, échafaudages alu)", 1500000, 3, 0.33],
+          ["Aménagement de l'atelier de pré-câblage, showroom et bureau d'études", 3500000, 8, 0.125],
+          ["Stock initial de composants solaires (panneaux Tier 1, onduleurs, câbles)", 15000000, 1, 1.0]
+        ],
+        staff: [
+          ["Ingénieur Directeur Technique / Électrotechnicien", 1, 450000],
+          ["Techniciens Monteurs / Installateurs Solaires", 2, 180000],
+          ["Ingénieur Technico-Commercial B2B", 1, 220000],
+          ["Agent logistique & SAV", 1, 120000]
+        ],
+        rawMaterials: "Panneaux photovoltaïques monocristallins Tier 1, onduleurs hybrides MPPT, batteries lithium LiFePO4, câbles solaires 6mm² et coffrets DC/AC"
+      };
+    }
+
+    // 4. Jus de fruits naturels & Agroalimentaire
+    if (text.includes('jus') || text.includes('mangue') || text.includes('fruit') || text.includes('boisson') || text.includes('agroalimentaire')) {
+      return {
+        activity: "Transformation de fruits frais locaux en jus naturels pasteurisés",
+        unit: "Bouteille 33cl / 1L",
+        sector: "agri",
+        products: [
+          [1, "Jus de mangue naturel pasteurisé (Bouteille 33 cl)", "Bouteille individuelle 33cl pur jus sans conservateur", 0.50, 500],
+          [2, "Jus de mangue naturel pasteurisé (Bouteille 1 Litre)", "Bouteille familiale 1L fermée hermétiquement", 0.50, 1200]
+        ],
+        equipment: [
+          ["Ligne semi-automatique de lavage, brossage et extraction de pulpe", 8500000, 5, 0.20],
+          ["Pasteurisateur tubulaire inox avec cuves de maintien en température", 7000000, 5, 0.20],
+          ["Remplisseuse-capsuleuse et étiqueteuse automatique", 5500000, 5, 0.20],
+          ["Chambre froide positive de conservation des fruits et produits finis", 4500000, 5, 0.20],
+          ["Véhicule utilitaire isotherme pour livraison points de vente", 6500000, 4, 0.25],
+          ["Aménagement atelier agroalimentaire conforme normes HACCP", 3500000, 8, 0.125]
+        ],
+        staff: [
+          ["Responsable de Production / Agroalimentaire", 1, 300000],
+          ["Opérateurs de ligne & pasteurisation", 3, 110000],
+          ["Responsable Qualité & Hygiène", 1, 180000],
+          ["Chauffeur-livreur / Commercial", 1, 130000]
+        ],
+        rawMaterials: "Mangues fraîches locales, eau purifiée, bouteilles verre/PET 33cl et 1L, capsules hermétiques et étiquettes imprimées"
+      };
+    }
+
+    // 5. Transport routier de marchandises & Fret
+    if (text.includes('transport') || text.includes('camion') || text.includes('logistique') || text.includes('fret') || text.includes('porteur')) {
+      return {
+        activity: "Transport routier urbain et interurbain de marchandises",
+        unit: "Trajet / Tonnage fret",
+        sector: "transport",
+        products: [
+          [1, "Fret routier interurbain régulier (Camion 10t)", "Liaisons interurbaines corridors régionaux", 0.55, 220000],
+          [2, "Distribution & messagerie urbaine de marchandises", "Navettes urbaines de livraison commerces", 0.30, 85000],
+          [3, "Location de camion porteur 10t avec chauffeur", "Mise à disposition journalière chantiers et logistique", 0.15, 160000]
+        ],
+        equipment: [
+          ["Flotte de 5 camions porteurs 10t révisés et sécurisés", 25000000, 5, 0.20],
+          ["Système de suivi GPS télématique temps réel sur toute la flotte", 1500000, 3, 0.33],
+          ["Aménagement base logistique, bureau d'exploitation & parking clôturé", 3500000, 8, 0.125],
+          ["Équipements d'arrimage, sangles renforcées et bâches étanches", 1200000, 3, 0.33]
+        ],
+        staff: [
+          ["Responsable d'Exploitation & Logistique", 1, 350000],
+          ["Chauffeurs routiers qualifiés éco-conduite", 3, 150000],
+          ["Mécanicien flotte / Maintenance préventive", 1, 160000],
+          ["Agent de facturation & suivi GPS", 1, 120000]
+        ],
+        rawMaterials: "Carburant gasoil, lubrifiants, pneumatiques neufs de rechange, péages autoroutiers et assurances fret"
+      };
+    }
+
+    // 6. Commerce, Boutique, Jouets & Retail par défaut
     return {
       activity: "Commerce moderne de détail, distribution spécialisée & vente de proximité",
       unit: "Article / Panier moyen",
@@ -245,22 +329,57 @@ export class BusinessPlanService {
   }
 
   /**
-   * Calcule le modèle financier complet sur 5 ans
+   * Calcule le modèle financier complet sur 5 ans de manière dynamique
    */
-  private static computeFinancialModel(profile: any, projectName: string, currency: string) {
-    const p1 = profile.products[0];
-    const p2 = profile.products[1];
-    const p3 = profile.products[2];
+  private static computeFinancialModel(profile: any, projectName: string, currency: string, options?: any) {
+    const p1 = profile.products[0] || [1, "Offre Principale", "", 0.5, 2000];
+    const p2 = profile.products[1] || [2, "Offre Complémentaire", "", 0.35, 1500];
+    const p3 = profile.products[2] || [3, "Prestations & Maintenance", "", 0.15, 3000];
 
     const price1 = Number(p1[4]) || 2000;
     const price2 = Number(p2[4]) || 1500;
     const price3 = Number(p3[4]) || 3000;
 
-    // Volume quotidien moyen
-    const vol1Day = 120;
-    const vol2Day = 90;
-    const vol3Day = 40;
+    const targetBudget = options?.totalBudget || options?.targetBudget;
+    const eqRatio = options?.equityRatio || 0.40;
+    const intRate = options?.loanInterestRate || 0.105;
+
+    const equipment = profile.equipment || [];
+    let totalEquipment = equipment.reduce((acc: number, item: any) => acc + (Number(item[1]) || 0), 0);
+    const fraisEtablissement = 1500000;
+
+    let bfrInitial: number;
+    let totalBesoins: number;
+
+    if (targetBudget && targetBudget > 0) {
+      totalBesoins = targetBudget;
+      const targetCapex = Math.round((totalBesoins - fraisEtablissement) * 0.65);
+      if (totalEquipment > 0) {
+        const scale = targetCapex / totalEquipment;
+        equipment.forEach((item: any) => {
+          item[1] = Math.max(100000, Math.round((item[1] * scale) / 50000) * 50000);
+        });
+        totalEquipment = equipment.reduce((acc: number, item: any) => acc + (Number(item[1]) || 0), 0);
+      }
+      bfrInitial = Math.max(1000000, totalBesoins - totalEquipment - fraisEtablissement);
+    } else {
+      bfrInitial = Math.round(totalEquipment * 0.25);
+      totalBesoins = totalEquipment + fraisEtablissement + bfrInitial;
+    }
+
+    const apportPersonnel = Math.round(totalBesoins * eqRatio);
+    const emprunt = totalBesoins - apportPersonnel;
+    const interetsAn1 = Math.round(emprunt * intRate);
+
+    // Volume quotidien calibré pour un chiffre d'affaires proportionnel au budget (2.0x à 2.5x)
+    const targetCa1 = Math.round(totalBesoins * 2.2);
+    const avgBasket = (price1 * 0.5 + price2 * 0.35 + price3 * 0.15);
     const days = 300;
+    const volDayTotal = Math.max(10, Math.round(targetCa1 / (avgBasket * days)));
+
+    const vol1Day = Math.round(volDayTotal * 0.5);
+    const vol2Day = Math.round(volDayTotal * 0.35);
+    const vol3Day = Math.max(1, volDayTotal - vol1Day - vol2Day);
 
     const vol1An1 = vol1Day * days;
     const vol2An1 = vol2Day * days;
@@ -271,22 +390,12 @@ export class BusinessPlanService {
     const ca1_3 = vol3An1 * price3;
 
     const ca1 = ca1_1 + ca1_2 + ca1_3;
-    const ca2 = Math.round(ca1 * 1.25);
-    const ca3 = Math.round(ca1 * 1.55);
-    const ca4 = Math.round(ca1 * 1.90);
-    const ca5 = Math.round(ca1 * 2.30);
+    const ca2 = Math.round(ca1 * 1.15);
+    const ca3 = Math.round(ca1 * 1.32);
+    const ca4 = Math.round(ca1 * 1.50);
+    const ca5 = Math.round(ca1 * 1.72);
 
-    const equipment = profile.equipment || [];
-    const totalEquipment = equipment.reduce((acc: number, item: any) => acc + (Number(item[1]) || 0), 0);
     const annualAmort = equipment.reduce((acc: number, item: any) => acc + ((Number(item[1]) || 0) * (Number(item[3]) || 0.20)), 0);
-
-    const fraisEtablissement = 1500000;
-    const bfrInitial = Math.round(ca1 * 0.10);
-    const totalBesoins = totalEquipment + fraisEtablissement + bfrInitial;
-
-    const apportPersonnel = Math.round(totalBesoins * 0.38);
-    const emprunt = totalBesoins - apportPersonnel;
-    const interetsAn1 = Math.round(emprunt * 0.08);
 
     const achatsMatieres = Math.round(ca1 * 0.36);
     const achatsEmballages = Math.round(ca1 * 0.09);
@@ -347,7 +456,7 @@ export class BusinessPlanService {
     const typeProjet = options.projectType || "Création";
     const currency = (options.currencySymbol || "FCFA").replace(/[\(\)\[\]"]/g, '').trim() || "FCFA";
     const profile = this.getProductProfile(options.productTopic || options.projectName, project);
-    const model = this.computeFinancialModel(profile, project, currency);
+    const model = this.computeFinancialModel(profile, project, currency, options);
     const theme = detectBpTheme(options.productTopic || options.projectName, options.template_id);
 
     // Les 20 feuilles bancables rigoureusement nommées
@@ -1035,28 +1144,28 @@ export class BusinessPlanService {
   // =========================================================================
   private static async buildBFR(sheet: Excel.Worksheet, context: Excel.RequestContext, p: any) {
     const t: BpTheme = p.theme;
-    this.createBanner(sheet, "B2:G2", `BESOIN EN FONDS DE ROULEMENT EN JOURS DE CA (${p.currencySymbol})`, t.bannerBg);
+    this.createBanner(sheet, "B2:H2", `BESOIN EN FONDS DE ROULEMENT EN JOURS DE CA (${p.currencySymbol})`, t.bannerBg);
 
-    sheet.getRange("B4:G4").values = [["Composante du BFR", "Norme de Rotation", "Année 1", "Année 2", "Année 3", "Année 4", "Année 5"]];
+    sheet.getRange("B4:H4").values = [["Composante du BFR", "Norme de Rotation", "Année 1", "Année 2", "Année 3", "Année 4", "Année 5"]];
 
     const m = p.model;
     const stock1 = Math.round((m?.achatsMatieres || 32000000) / 12);
     const creance1 = Math.round((m?.ca1 || 81600000) / 24);
     const dette1 = -Math.round(((m?.achatsMatieres || 32000000) + (m?.achatsEmballages || 9500000)) / 12);
 
-    sheet.getRange("B5:G5").values = [["Stocks de matières & marchandises", "30 jours de consommation", stock1, Math.round(stock1 * 1.25), Math.round(stock1 * 1.55), Math.round(stock1 * 1.90), Math.round(stock1 * 2.30)]];
-    sheet.getRange("B6:G6").values = [["Créances clients d'exploitation", "15 jours de chiffre d'affaires", creance1, Math.round(creance1 * 1.25), Math.round(creance1 * 1.55), Math.round(creance1 * 1.90), Math.round(creance1 * 2.30)]];
-    sheet.getRange("B7:G7").values = [["Dettes fournisseurs (Crédit d'exploitation)", "30 jours d'achats", dette1, Math.round(dette1 * 1.25), Math.round(dette1 * 1.55), Math.round(dette1 * 1.90), Math.round(dette1 * 2.30)]];
+    sheet.getRange("B5:H5").values = [["Stocks de matières & marchandises", "30 jours de consommation", stock1, Math.round(stock1 * 1.25), Math.round(stock1 * 1.55), Math.round(stock1 * 1.90), Math.round(stock1 * 2.30)]];
+    sheet.getRange("B6:H6").values = [["Créances clients d'exploitation", "15 jours de chiffre d'affaires", creance1, Math.round(creance1 * 1.25), Math.round(creance1 * 1.55), Math.round(creance1 * 1.90), Math.round(creance1 * 2.30)]];
+    sheet.getRange("B7:H7").values = [["Dettes fournisseurs (Crédit d'exploitation)", "30 jours d'achats", dette1, Math.round(dette1 * 1.25), Math.round(dette1 * 1.55), Math.round(dette1 * 1.90), Math.round(dette1 * 2.30)]];
 
-    sheet.getRange("B8:G8").values = [["BFR GLOBAL NET D'EXPLOITATION", "", "=SUM(D5:D7)", "=SUM(E5:E7)", "=SUM(F5:F7)", "=SUM(G5:G7)", "=SUM(H5:H7)"]];
+    sheet.getRange("B8:H8").values = [["BFR GLOBAL NET D'EXPLOITATION", "", "=SUM(D5:D7)", "=SUM(E5:E7)", "=SUM(F5:F7)", "=SUM(G5:G7)", "=SUM(H5:H7)"]];
 
-    this.setRangeNumberFormat(sheet, "D5:G8", `#,##0 "${p.currencySymbol}"`);
-    this.applyModernTableStyle(sheet, "B4:G4", "B5:G7", t.headerBg, { totalRow: "B8:G8" });
+    this.setRangeNumberFormat(sheet, "D5:H8", `#,##0 "${p.currencySymbol}"`);
+    this.applyModernTableStyle(sheet, "B4:H4", "B5:H7", t.headerBg, { totalRow: "B8:H8" });
 
     try {
       sheet.getRange("B:B").format.columnWidth = 280;
       sheet.getRange("C:C").format.columnWidth = 180;
-      for (const col of ["D", "E", "F", "G"]) {
+      for (const col of ["D", "E", "F", "G", "H"]) {
         sheet.getRange(`${col}:${col}`).format.columnWidth = 175;
       }
     } catch (_) {}
@@ -1408,14 +1517,24 @@ export class BusinessPlanService {
 
     sheet.getRange("B4:E4").values = [["Indicateur Financier Clé", "Valeur Calculée", "Norme Bancaire (UEMOA/CEMAC)", "Avis d'Opportunité"]];
 
+    const m = p.model;
+    const vanVal = Math.round((m?.caf || 8000000) * 3.79 - (m?.totalBesoins || 35000000));
+    const triVal = Math.min(65, Math.max(12, Math.round(((m?.caf || 8000000) / Math.max(m?.totalBesoins || 35000000, 1)) * 100 * 1.1)));
+    const drciYears = ((m?.totalBesoins || 35000000) / Math.max(m?.caf || 8000000, 1)).toFixed(1);
+    const ipVal = ((vanVal + (m?.totalBesoins || 35000000)) / Math.max(m?.totalBesoins || 35000000, 1)).toFixed(2);
+    const dscrVal = ((m?.caf || 8000000) / Math.max((m?.interetsAn1 || 1000000) + Math.round((m?.emprunt || 10000000) / 5), 1)).toFixed(2);
+    const gearingVal = ((m?.emprunt || 20000000) / Math.max(m?.apportPersonnel || 15000000, 1)).toFixed(2);
+    const altmanVal = (0.717 * 0.3 + 0.847 * 0.25 + 3.107 * 0.20 + 0.420 * 1.5 + 0.998 * 1.2).toFixed(2);
+
+    const fmt = (n: number) => Math.round(n).toLocaleString('fr-FR');
     const ratios = [
-      ["Valeur Actuelle Nette (VAN à 10%)", `32 500 000 ${p.currencySymbol}`, "> 0", "PROJET TRÈS RENTABLE ✅"],
-      ["Taux de Rentabilité Interne (TRI)", "28.5% l'an", "> Taux d'intérêt bancaire (8%)", "EXCELLENT POTENTIEL ✅"],
-      ["Délai de Récupération (DRCI)", "2 ans et 6 mois", "< 4 ans", "RISQUE CAPITAL TRÈS FAIBLE ✅"],
-      ["Indice de Profitabilité (IP)", "1.52", "> 1.0", "GAIN DE 52 FCFA PAR FCFA INVESTI ✅"],
-      ["Ratio de Couverture Dette (DSCR An 1)", "1.85x", ">= 1.30x", "SERVICE DE DETTE TRÈS BIEN COUVERT ✅"],
-      ["Ratio d'Endettement (Dette / Fonds propres)", "1.33x", "< 2.0x", "STRUCTURE FINANCIÈRE SOLIDE ✅"],
-      ["Score de Risque Altman Z' PME OHADA", "3.15", "> 2.90 (Zone Sûre)", "RISQUE DE DÉFAILLANCE MINIME ✅"]
+      ["Valeur Actuelle Nette (VAN à 10%)", `${fmt(vanVal)} ${p.currencySymbol}`, "> 0", vanVal > 0 ? "PROJET RENTABLE" : "À SURVEILLER"],
+      ["Taux de Rentabilité Interne (TRI)", `${triVal.toFixed(1)}% l'an`, "> Taux d'intérêt bancaire", "POTENTIEL CONFIRMÉ"],
+      ["Délai de Récupération (DRCI)", `${drciYears} ans`, "< 4 ans", Number(drciYears) <= 4 ? "RISQUE CAPITAL MODÉRÉ" : "RETOUR ÉTENDU"],
+      ["Indice de Profitabilité (IP)", `${ipVal}`, "> 1.0", Number(ipVal) >= 1 ? `CRÉATION DE VALEUR (+${Math.round((Number(ipVal) - 1) * 100)}%)` : "INSUFFISANT"],
+      ["Ratio de Couverture Dette (DSCR An 1)", `${dscrVal}x`, ">= 1.30x", Number(dscrVal) >= 1.3 ? "SERVICE DE DETTE COUVERT" : "TENSION TRÉSORERIE"],
+      ["Ratio d'Endettement (Dette / Fonds propres)", `${gearingVal}x`, "< 2.0x", Number(gearingVal) <= 2.0 ? "STRUCTURE ÉQUILIBRÉE" : "LEVIER ÉLEVÉ"],
+      ["Score de Risque Altman Z' PME OHADA", `${altmanVal}`, "> 2.90 (Zone Sûre)", Number(altmanVal) >= 2.9 ? "ZONE FINANCIÈRE SAINE" : "VIGILANCE REQUISE"]
     ];
 
     for (let i = 0; i < ratios.length; i++) {

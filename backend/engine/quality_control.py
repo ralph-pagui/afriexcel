@@ -59,6 +59,11 @@ class QualityControl:
             "clinique", "médical", "medical", "consultation", "échographe", "poupée", "peluche",
             "quincaillerie", "ananas", "bissap", "pain de sucre"
         ],
+        "energie_solaire": [
+            "poulet", "poussin", "volaille", "avicole", "couvoir",
+            "gondole", "gamme star", "caisse tactile", "tricycle", "cacao", "chocolat",
+            "jus de mangue", "camion porteur", "fret routier"
+        ],
         "commerce_informatique": [
             "camion porteur", "fret routier", "poulet", "poussin", "volaille", "avicole", "couvoir",
             "clinique", "médical", "medical", "consultation", "jus de", "bouteille de jus", "mangue",

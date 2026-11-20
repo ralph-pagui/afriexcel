@@ -137,6 +137,7 @@ class PromptParser:
                 return " ".join(words) + " SARL"
 
         defaults = {
+            "energie_solaire": "IVOIRE SOLAR ENERGY SARL" if ("côte d'ivoire" in country.lower() or "ivoire" in country.lower()) else "AFRICA SOLAR ENERGY SARL",
             "jus": "BENIN FRUIT INDUSTRIES SARL" if "bénin" in country.lower() or "benin" in country.lower() else "AGRO FRUIT INDUSTRIES SARL",
             "transport": "SEN TRANS LOGISTICS SARL",
             "commerce_informatique": "AFRIQ TECH DISTRIBUTION SARL",
@@ -316,7 +317,7 @@ class PromptParser:
         if m_millions:
             return float(m_millions.group(1).replace(',', '.')) * 1_000_000
 
-        m_num = re.search(r'(?:budget|investissement)\s*(?:total|initial)?\s*[:=-]?\s*(\d[\d\s]{5,})\s*(?:fcfa|f\s*cfa|xof|xaf)?\b', text, re.I)
+        m_num = re.search(r'(?:budget|investissement|montant|co[uû]t)\s*(?:total|initial|global|estimatif|pr[eé]vu|souhait[eé]|du\s+projet|\s+)*[:=-]?\s*(\d[\d\s]{5,})\s*(?:fcfa|f\s*cfa|xof|xaf)?\b', text, re.I)
         if m_num:
             digits = re.sub(r'\s+', '', m_num.group(1))
             if digits.isdigit():
@@ -456,6 +457,43 @@ class PromptParser:
                 }
             ]
 
+        # Cas 4 : Solutions solaires photovoltaïques
+        if sector_id == "energie_solaire":
+            return [
+                {
+                    "id": 1,
+                    "name": "Système Solaire Résidentiel Hybride (3 kWc)",
+                    "description": "Installation résidentielle complète avec panneaux monocristallins, onduleur hybride 3 kW et stockage lithium LiFePO4",
+                    "format": "Installation",
+                    "share_pct": 0.40,
+                    "unit_price": 2800000.0
+                },
+                {
+                    "id": 2,
+                    "name": "Centrale Solaire Commerciale & Tertiaire PME (10 kWc)",
+                    "description": "Solution d'autoconsommation triphasée pour commerces et PME avec onduleur réseau, secours batterie et monitoring",
+                    "format": "Installation",
+                    "share_pct": 0.35,
+                    "unit_price": 7500000.0
+                },
+                {
+                    "id": 3,
+                    "name": "Installation Solaire Professionnelle Forte Puissance (30 kWc)",
+                    "description": "Centrale sur toiture pour cliniques, hôtels et exploitations agricoles avec régulation et télémétrie avancée",
+                    "format": "Installation",
+                    "share_pct": 0.20,
+                    "unit_price": 18500000.0
+                },
+                {
+                    "id": 4,
+                    "name": "Contrat de Maintenance Préventive & Télé-surveillance",
+                    "description": "Contrat annuel de thermographie infrarouge, nettoyage des modules, contrôle des chaînes DC/AC et maintenance d'urgence",
+                    "format": "Contrat/an",
+                    "share_pct": 0.05,
+                    "unit_price": 350000.0
+                }
+            ]
+
         return []
 
     @classmethod
@@ -513,6 +551,11 @@ class PromptParser:
                 r'\bclinique[s]?\b', r'\bcabinet médical\b', r'\bhôpital\b',
                 r'\blaboratoire\b', r'\banalyses médicales\b', r'\bbiologie médicale\b',
                 r'\bhématologie\b', r'\bbiochimie\b', r'\bautomate[s]?\b', r'\bprélèvement[s]?\b'
+            ],
+            "energie_solaire": [
+                r'\bsolaire[s]?\b', r'\bphotovolta[ïi]que[s]?\b', r'\bpanneau[x]?\b',
+                r'\bonduleur[s]?\b', r'\bbatterie[s]?\b', r'\bkwc\b', r'\brenouvelable[s]?\b',
+                r'\br[ée]gulateur[s]?\b', r'\bkit[s]?\s+solaire[s]?\b'
             ]
         }
 
@@ -523,9 +566,11 @@ class PromptParser:
                     scores[sec] += len(matches) * 3
 
         # Bonus déterminant si le secteur ou l'activité est explicitement déclaré
-        m_sec = re.search(r'secteur\s*[:=-]\s*([^\n\r,.;]+)', lower)
+        m_sec = re.search(r'(?:secteur|sous-secteur|activit[ée]\s+principale)\s*[:=-]\s*([^\n\r,.;]+)', lower)
         if m_sec:
             sec_text = m_sec.group(1)
+            if any(w in sec_text for w in ["solaire", "photovoltaïque", "photovoltaique", "renouvelable", "énergie", "energie"]):
+                scores["energie_solaire"] += 50
             if any(w in sec_text for w in ["jus", "fruit", "mangue", "agroalimentaire", "boisson", "transformation"]):
                 scores["jus"] += 40
             if any(w in sec_text for w in ["informatique", "matériel", "distribution", "technologie", "commerce"]):

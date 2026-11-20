@@ -80,7 +80,7 @@ export class PythonBackendService {
     for (const url of candidateUrls) {
       try {
         const controller = new AbortController();
-        const timeoutMs = url === LOCAL_URL ? 8000 : 60000;
+        const timeoutMs = url === LOCAL_URL ? 45000 : 60000;
         const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
         const res = await fetch(`${url}/api/generate-business-plan`, {

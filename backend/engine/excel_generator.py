@@ -208,6 +208,9 @@ class ExcelReportGenerator:
         elif sec_id == "commerce_informatique":
             appro_label = "Approvisionnement Équipements Informatiques, Serveurs, PC & Équipements Réseaux"
             norme_label = "Garanties constructeurs officielles, conformité douanière, traçabilité des numéros de série & RCCM"
+        elif sec_id == "energie_solaire":
+            appro_label = "Approvisionnement Panneaux Solaires Tier-1, Onduleurs Hybrides & Batteries Lithium"
+            norme_label = "Normes internationales CE/IEC 61215/61730, habilitation électricien photovoltaïque B2V/BR & conformité CI-ENERGIES"
         elif is_comm:
             norme_label = "Conformité stricte aux règles commerciales, immatriculation RCCM & IFU/NINEA local"
         else:
@@ -296,6 +299,12 @@ class ExcelReportGenerator:
                 ["Revendeurs Informels de Matériel d'Occasion", "Commerçants isolés de matériel reconditionné", "Prix très bas au comptant", "Matériel sans garantie, pannes fréquentes, absence de factures normalisées pour entreprises", "Équipements neufs sous garantie constructeur, facturation normalisée OHADA et SAV certifié"],
                 ["Grossistes Importateurs Internationaux", "Représentations officielles de grands constructeurs mondiaux", "Catalogue étendu et stocks volumineux", "Tarifs rigides, délais de livraison longs pour PME, pas d'installation sur mesure", "Réactivité immédiate, conseil personnalisé avant-vente, installation et intégration sur site client"],
                 ["Grandes Surfaces & Distributeurs Grand Public", "Rayons informatiques des grands magasins", "Visibilité commerciale grand public", "Offre orientée grand public sans solutions serveurs/réseaux d'entreprise", "Offre B2B sur mesure, intégration de parcs informatiques, serveurs et contrats de maintenance récurrents"]
+            ]
+        elif sec_id == "energie_solaire":
+            comp_rows = [
+                ["Installateurs Informels / Électriciens Bâtiment", "Artisans électriciens sans qualification solaire", "Prix bas négociés au coup par coup", "Matériel contrefait ou déclassé, sous-dimensionnement, pannes de batteries en <6 mois, risque d'incendie", "Dimensionnement rigoureux par logiciel PV, matériel Tier-1 certifié, garanties constructeur et sécurité"],
+                ["Grandes Multinationales de l'Énergie", "Filiales de majors énergétiques internationales", "Très forte capacité financière, grands parcs solaires MW", "Inadaptées aux besoins des PME et résidences, devis très longs, tarifs prohibitifs", "Agilité d'intervention sous 48h, tarification compétitive PME/résidentiel et service de proximité"],
+                ["Distributeurs Vendeurs de Kits sans Pose", "Comptoirs d'importation vendant des kits au carton", "Disponibilité de stock en magasin", "Aucune ingénierie d'installation, absence de SAV et aucun suivi après-vente", "Offre clés en main : étude d'ingénierie, pose certifiée, raccordement et contrat de maintenance récurrent"]
             ]
         else:
             comp_rows = [
@@ -408,6 +417,16 @@ class ExcelReportGenerator:
                 ["6. Processus (Process)", "Audit des besoins client, proposition technique chiffrée, livraison, paramétrage et SAV", "Délais de réponse sous 24h et suivi des tickets d'assistance"],
                 ["7. Preuve Matérielle (Physical)", "Showroom équipé, banc de test technique, attestations constructeurs", "Certificats de garantie et contrats de service formalisés"]
             ]
+        elif sec_id == "energie_solaire":
+            rows = [
+                ["1. Produit (Product)", f"Solutions solaires photovoltaïques clés en main : {profile.products[0].name}", "Systèmes autonomes et hybrides haute performance avec onduleurs certifiés, batteries lithium et monitoring IoT"],
+                ["2. Prix (Price)", f"Tarification transparente au kWc installé : de {p1_price:,.0f} à {p_last_price:,.0f} {currency}".replace(",", " "), "Formules compétitives avec retour sur investissement sous 3 à 4 ans comparé aux tarifs réseau/groupe"],
+                ["3. Distribution (Place)", "Interventions directes à Abidjan et principales villes de Côte d'Ivoire", "Équipes mobiles d'installation autonomes avec véhicules d'intervention et outillage de contrôle"],
+                ["4. Promotion (Promotion)", "Prospection B2B ciblée (PME, commerces, cliniques, exploitations agricoles) et marketing digital", "Audits énergétiques gratuits sur site, simulateur d'économies d'énergie et références d'installations"],
+                ["5. Personnel (People)", "Ingénieurs électrotechniciens et techniciens monteurs solaires qualifiés et habilités", "Rigueur d'exécution, habilitation électrique et accompagnement personnalisé du client"],
+                ["6. Processus (Process)", "Audit de charge, dimensionnement par logiciel, pose, raccordement, mise en service et formation client", "Contrôle qualité strict à chaque étape et raccordement sécurisé"],
+                ["7. Preuve Matérielle (Physical)", "Véhicules floqués équipés, outillage de mesure étalonné et livret technique d'exploitation", "Certificats de garantie matérielle constructeur (25 ans panneaux, 10 ans batteries) et attestation de conformité"]
+            ]
         else:
             rows = [
                 ["1. Produit (Product)", f"Gamme professionnelle adaptée au marché : {profile.products[0].name}", "Qualité certifiée, fiabilité d'usage et packaging valorisant"],
@@ -506,6 +525,15 @@ class ExcelReportGenerator:
                 ["Mois 4", "Recrutement des commerciaux B2B et techniciens réseaux & formation aux outils", "Direction / RH", "Semaines 13-16", "Équipe commerciale et technique opérationnelle"],
                 ["Mois 5", "Campagne de prospection B2B, inauguration showroom & signature premiers contrats", "Responsable Commercial", "Semaines 17-20", "Premiers parcs informatiques équipés et livrés"],
                 ["Mois 6 à 12", "Développement continu des ventes, contrats de maintenance récurrents et extension de gamme", "Direction / Équipe Commerciale", "Semaines 21-52", "Fidélisation de la clientèle PME et rentabilité commerciale pérenne"]
+            ]
+        elif sec_id == "energie_solaire":
+            rows = [
+                ["Mois 1", "Constitution légale de la SARL, formalités administratives & habilitations électriques solaires", "Promoteur / Notaire", "Semaines 1-4", "Statuts notariés, RCCM, Déclaration fiscale et habilitations"],
+                ["Mois 2", "Aménagement du local technique, atelier de pré-câblage, showroom et bureau d'études", "Promoteur / Artisans", "Semaines 5-8", "Atelier et bureau d'études opérationnels"],
+                ["Mois 3", "Acquisition véhicule utilitaire, outillage électricien certifié & banc d'essais photovoltaïque", "Directeur Technique", "Semaines 9-12", "Véhicule d'intervention et testeurs de conformité livrés"],
+                ["Mois 4", "Approvisionnement stock initial (panneaux Tier-1, onduleurs, batteries lithium) & logiciels dimensionnement", "Responsable Achats", "Semaines 13-16", "Composants solaires réceptionnés et inventoriés"],
+                ["Mois 5", "Campagne commerciale B2B/résidentiel, premières études de charge & premières installations", "Ingénieur Commercial", "Semaines 17-20", "Premiers systèmes résidentiels et centrales PME installés"],
+                ["Mois 6 à 12", "Montée en puissance des installations (résidentiel, PME, pros) & contrats de maintenance récurrents", "Directeur Technique / Équipe", "Semaines 21-52", "Capacité annuelle atteinte et rentabilité consolidée"]
             ]
         elif is_comm:
             rows = [
