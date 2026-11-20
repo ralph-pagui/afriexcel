@@ -53,6 +53,16 @@ class QualityControl:
         ],
         "magasin_jouets": [
             "clinique", "médical", "poulet", "poussin", "volaille", "cacao", "pisciculture", "fret"
+        ],
+        "jus": [
+            "camion porteur", "fret routier", "poulet", "poussin", "volaille", "avicole", "couvoir",
+            "clinique", "médical", "medical", "consultation", "échographe", "poupée", "peluche",
+            "quincaillerie", "ananas", "bissap", "pain de sucre"
+        ],
+        "commerce_informatique": [
+            "camion porteur", "fret routier", "poulet", "poussin", "volaille", "avicole", "couvoir",
+            "clinique", "médical", "medical", "consultation", "jus de", "bouteille de jus", "mangue",
+            "hectare", "maraîchage", "tomate"
         ]
     }
 
@@ -188,6 +198,27 @@ class QualityControl:
         if abs(kpis.irr_value - 28.6) < 0.001 and sec_id != "clinique":
             report.add_warning("Ratios financiers", "Le TRI est exactement égal à 28.6%, vérifier que le solveur numérique a tourné.")
 
+        # 7. Équilibre strict du Plan de Financement Initial (Emplois = Ressources à 0 FCFA)
+        fin = fin_data.get("financing", {})
+        inv = fin_data.get("investments", {})
+        bfr_init = fin.get("bfr_initial", inv.get("bfr_initial", 0))
+        tot_emplois = inv.get("frais_etab", 0) + inv.get("total", 0) + bfr_init
+        tot_ressources = fin.get("apport", 0) + fin.get("emprunt", 0)
+        ecart_fin = abs(tot_emplois - tot_ressources)
+
+        if ecart_fin > 1.0:
+            report.add_check(
+                "Équilibre Plan de Financement Initial",
+                False,
+                f"Déséquilibre détecté : Emplois ({tot_emplois:,.0f}) != Ressources ({tot_ressources:,.0f}) | Écart = {ecart_fin:,.0f} FCFA"
+            )
+        else:
+            report.add_check(
+                "Équilibre Plan de Financement Initial",
+                True,
+                f"Équilibre parfait : Emplois == Ressources ({tot_emplois:,.0f} FCFA, Écart = 0 FCFA)."
+            )
+
         return report
 
     @classmethod
@@ -223,4 +254,32 @@ class QualityControl:
                 True,
                 "Classeur 100% étanche. Aucune contamination étrangère détectée dans les 20 feuilles."
             )
+
+        # Audit de l'absence de faux badges ou certifications bancaires arbitraires
+        fake_stamps = ["note a+", "validé comité", "valide comite", "très bancable"]
+        fake_found = []
+        for sheetname in wb.sheetnames:
+            ws = wb[sheetname]
+            for row in ws.iter_rows(values_only=True):
+                for val in row:
+                    if isinstance(val, str):
+                        v_lower = val.lower()
+                        for fs in fake_stamps:
+                            if fs in v_lower:
+                                fake_found.append((sheetname, fs, val[:70]))
+
+        if fake_found:
+            for sname, fs, excerpt in fake_found[:3]:
+                report.add_check(
+                    f"Badge Arbitraire Détecté [{sname}]",
+                    False,
+                    f"Certification ou badge non vérifiable '{fs}' trouvé dans : « {excerpt} »"
+                )
+        else:
+            report.add_check(
+                "Absence de Badges Arbitraires",
+                True,
+                "Zéro badge arbitraire ou certification fictive."
+            )
+
         return report

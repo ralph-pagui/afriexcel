@@ -144,16 +144,16 @@ class ExcelReportGenerator:
         loan_years = fin.get("loan_duration_years", 5)
 
         kpi_cards = [
-            ("Investissement Total (CAPEX+BFR)", f"{kpis.total_investment:,.0f} {currency}".replace(",", " "), "Coût global de démarrage"),
-            ("Fonds Propres Mobilisés", f"{kpis.equity_promoter:,.0f} {currency} ({part_fp}%)".replace(",", " "), "Apport promoteur validé"),
-            ("Crédit Moyen Terme Sollicité", f"{kpis.bank_loan:,.0f} {currency} ({part_loan}%)".replace(",", " "), f"Taux {rate_pct}% sur {loan_years} ans"),
-            ("Chiffre d'Affaires Année 1", f"{kpis.revenue_year1:,.0f} {currency}".replace(",", " "), "Ventes prévisionnelles"),
-            ("Résultat Net Bénéficiaire An 1", f"{kpis.net_profit_year1:,.0f} {currency}".replace(",", " "), "Marge nette protectrice"),
-            ("Taux de Rentabilité Interne (TRI)", kpis.irr_pct, "Rendement financier réel"),
-            ("Note de Bancabilité du Dossier", "NOTE A+ (PROJET TRÈS BANCABLE)", "Conforme critères UEMOA/CEMAC")
+            ("Investissement Total (CAPEX+BFR)", f"{kpis.total_investment:,.0f} {currency}".replace(",", " "), "Coût global de démarrage", "CAPEX + BFR initial"),
+            ("Fonds Propres Mobilisés", f"{kpis.equity_promoter:,.0f} {currency} ({part_fp}%)".replace(",", " "), "Apport promoteur", f"Part {part_fp:.0f}%"),
+            ("Crédit Moyen Terme Sollicité", f"{kpis.bank_loan:,.0f} {currency} ({part_loan}%)".replace(",", " "), f"Taux {rate_pct}% sur {loan_years} ans", f"Part {part_loan:.0f}%"),
+            ("Chiffre d'Affaires Année 1", f"{kpis.revenue_year1:,.0f} {currency}".replace(",", " "), "Ventes prévisionnelles", "Activité nominale"),
+            ("Résultat Net Bénéficiaire An 1", f"{kpis.net_profit_year1:,.0f} {currency}".replace(",", " "), "Marge nette protectrice", "Bénéfice de départ"),
+            ("Taux de Rentabilité Interne (TRI)", kpis.irr_pct, "Rendement financier du projet", "Flux actualisés"),
+            ("Délai de Récupération (DRCI)", kpis.payback_period, "Retour sur capital investi", "Horizon de retour")
         ]
 
-        for idx, (label, val, note) in enumerate(kpi_cards):
+        for idx, (label, val, note, sub_tag) in enumerate(kpi_cards):
             r = 5 + idx * 2
             ws.cell(row=r, column=5, value=label).font = Font(name="Calibri", size=9, bold=True, color="475569")
             ws.cell(row=r, column=5).fill = PatternFill(fill_type="solid", fgColor=theme.card_bg)
@@ -161,11 +161,11 @@ class ExcelReportGenerator:
             ws.cell(row=r+1, column=5).fill = PatternFill(fill_type="solid", fgColor=theme.card_bg)
 
             val_cell = ws.cell(row=r, column=6, value=val)
-            val_cell.font = Font(name="Calibri", size=11, bold=True, color="0F172A" if "A+" not in val else theme.badge_success_fg)
-            val_cell.fill = PatternFill(fill_type="solid", fgColor=theme.card_bg if "A+" not in val else theme.badge_success_bg)
+            val_cell.font = Font(name="Calibri", size=11, bold=True, color="0F172A")
+            val_cell.fill = PatternFill(fill_type="solid", fgColor=theme.card_bg)
             val_cell.alignment = Alignment(horizontal="right", vertical="center")
 
-            sub_cell = ws.cell(row=r+1, column=6, value="✔ Validé comité")
+            sub_cell = ws.cell(row=r+1, column=6, value=sub_tag)
             sub_cell.font = Font(name="Calibri", size=8, color=theme.badge_success_fg)
             sub_cell.fill = PatternFill(fill_type="solid", fgColor=theme.card_bg)
             sub_cell.alignment = Alignment(horizontal="right", vertical="center")
@@ -202,6 +202,12 @@ class ExcelReportGenerator:
         elif sec_id == "aviculture":
             appro_label = "Approvisionnement Poussins d'un Jour, Aliments Provende & Produits Vétérinaires"
             norme_label = "Normes de biosécurité avicole, suivi sanitaire vétérinaire régulier, RCCM & déclaration fiscale"
+        elif sec_id == "jus":
+            appro_label = "Approvisionnement Mangues Fraîches Locales, Bouteilles Verre/PET & Ingrédients"
+            norme_label = "Normes de sécurité sanitaire HACCP, pasteurisation contrôlée, traçabilité des lots & agrément agroalimentaire"
+        elif sec_id == "commerce_informatique":
+            appro_label = "Approvisionnement Équipements Informatiques, Serveurs, PC & Équipements Réseaux"
+            norme_label = "Garanties constructeurs officielles, conformité douanière, traçabilité des numéros de série & RCCM"
         elif is_comm:
             norme_label = "Conformité stricte aux règles commerciales, immatriculation RCCM & IFU/NINEA local"
         else:
@@ -278,6 +284,18 @@ class ExcelReportGenerator:
                 ["Éleveurs Traditionnels & Basse-cour", "Petits éleveurs informels en claustration sommaire", "Faibles coûts de structure, proximité villageoise", "Taux de mortalité élevé (>15%), croissance lente, approvisionnement irrégulier", "Poulets calibrés 1.8-2.0 kg, alimentation contrôlée, prophylaxie rigoureuse et disponibilité continue"],
                 ["Importations de Volailles Congelées", "Découpes et poulets surgelés importés", "Prix bas au carton, marques internationales", "Qualité gustative altérée par décongélation, dépendance extérieure, devises", "Poulets frais abattus localement du jour, traçabilité garantie et soutien à l'économie locale"],
                 ["Fermes Industrielles Intégrées", "Quelques grands complexes avicoles nationaux", "Volumes importants et capacités financières", "Politique commerciale rigide axée uniquement sur les hypermarchés", "Proximité relationnelle, flexibilité des volumes livrés aux demi-grossistes et rôtisseries"]
+            ]
+        elif sec_id == "jus":
+            comp_rows = [
+                ["Vendeurs Informels de Jus & Pressage Artisanal", "Vente ambulante en sachets ou bidons de récupération", "Prix bas négociés au comptant", "Défaut d'hygiène, non pasteurisé (fermentation rapide sous 24h), absence de traçabilité", "Pasteurisation industrielle contrôlée, DLUO longue conservation, bouteilles neuves capsulées et hygiène garantie"],
+                ["Grandes Marques de Jus Importés & Sodas", "Boissons gazeuses et nectars concentrés importés", "Forte notoriété internationale, distribution massive en GMS", "Prix très élevés, additifs chimiques et forte teneur en sucres raffinés", "Pur jus 100% naturel sans conservateur, valorisation des mangues locales de qualité et prix accessible"],
+                ["Petites Unités Agroalimentaires Semi-artisanales", "Petits ateliers de transformation locaux", "Présence ponctuelle dans quelques boutiques", "Capacité limitée, ruptures fréquentes en contre-saison, conditionnement artisanal", "Capacité nominale de 3 000 L/jour, approvisionnement saisonnier sécurisé et présence multi-formats (33cl et 1L)"]
+            ]
+        elif sec_id == "commerce_informatique":
+            comp_rows = [
+                ["Revendeurs Informels de Matériel d'Occasion", "Commerçants isolés de matériel reconditionné", "Prix très bas au comptant", "Matériel sans garantie, pannes fréquentes, absence de factures normalisées pour entreprises", "Équipements neufs sous garantie constructeur, facturation normalisée OHADA et SAV certifié"],
+                ["Grossistes Importateurs Internationaux", "Représentations officielles de grands constructeurs mondiaux", "Catalogue étendu et stocks volumineux", "Tarifs rigides, délais de livraison longs pour PME, pas d'installation sur mesure", "Réactivité immédiate, conseil personnalisé avant-vente, installation et intégration sur site client"],
+                ["Grandes Surfaces & Distributeurs Grand Public", "Rayons informatiques des grands magasins", "Visibilité commerciale grand public", "Offre orientée grand public sans solutions serveurs/réseaux d'entreprise", "Offre B2B sur mesure, intégration de parcs informatiques, serveurs et contrats de maintenance récurrents"]
             ]
         else:
             comp_rows = [
@@ -370,6 +388,26 @@ class ExcelReportGenerator:
                 ["6. Processus (Process)", "Alimentation rigoureuse par phase de croissance (démarrage, croissance, finition)", "Pesées hebdomadaires, respect strict du plan de prophylaxie et traçabilité des lots"],
                 ["7. Preuve Matérielle (Physical)", "Bâtiments d'élevage modernes bien ventilés, sas de désinfection et registre d'élevage", "Certificats sanitaires vétérinaires délivrés à chaque sortie de bande"]
             ]
+        elif sec_id == "jus":
+            rows = [
+                ["1. Produit (Product)", f"Jus de mangue naturel pasteurisé en bouteilles 33cl et 1L : {profile.products[0].name}", "Jus pur fruits sans additif, pasteurisation thermique assurant une conservation longue durée"],
+                ["2. Prix (Price)", f"Positionnement compétitif : de {p1_price:,.0f} à {p_last_price:,.0f} {currency}".replace(",", " "), "Tarifs distributeurs attractifs (grossistes, CHR, supermarchés) avec marge protectrice"],
+                ["3. Distribution (Place)", "Canaux CHR (cafés, hôtels, restaurants), grandes et moyennes surfaces (GMS), boutiques", "Réseau de distribution urbain avec livraison dédiée par véhicules isothermes"],
+                ["4. Promotion (Promotion)", "Dégustations en points de vente, communication digitale locale, partenariats événementiels", "Visibilité de marque forte valorisant la fraîcheur et le savoir-faire local"],
+                ["5. Personnel (People)", "Opérateurs de ligne formés aux règles d'hygiène HACCP et équipe commerciale dédiée", "Rigueur de process, contrôles qualité permanents et sens de la relation client"],
+                ["6. Processus (Process)", "Tri rigoureux, lavage/brossage, extraction, pasteurisation, embouteillage à chaud et étiquetage", "Traçabilité des lots et respect strict des normes de sécurité alimentaire"],
+                ["7. Preuve Matérielle (Physical)", "Bouteilles esthétiques étiquetées aux normes, atelier inox carrelé et magasin tempéré", "Certificat de salubrité et conformité aux standards agroalimentaires"]
+            ]
+        elif sec_id == "commerce_informatique":
+            rows = [
+                ["1. Produit (Product)", f"Matériel informatique professionnel & solutions réseaux : {profile.products[0].name}", "Ordinateurs portables et de bureau professionnels, serveurs, routeurs et périphériques fiables"],
+                ["2. Prix (Price)", f"Grille tarifaire compétitive B2B : de {p1_price:,.0f} à {p_last_price:,.0f} {currency}".replace(",", " "), "Tarifs dégressifs pour parcs d'entreprises, devis transparents et marges calculées"],
+                ["3. Distribution (Place)", "Showroom professionnel en zone d'affaires et livraison directe en entreprise", "Espace d'exposition moderne, stocks de sécurité et interventions sur site client"],
+                ["4. Promotion (Promotion)", "Démarchage direct des DSI, PME et administrations, marketing digital et catalogue", "Partenariats de maintenance et contrats d'infogérance récurrents"],
+                ["5. Personnel (People)", "Ingénieurs et techniciens certifiés en réseaux et maintenance informatique", "Expertise technique pointue, sens du service client et assistance réactive"],
+                ["6. Processus (Process)", "Audit des besoins client, proposition technique chiffrée, livraison, paramétrage et SAV", "Délais de réponse sous 24h et suivi des tickets d'assistance"],
+                ["7. Preuve Matérielle (Physical)", "Showroom équipé, banc de test technique, attestations constructeurs", "Certificats de garantie et contrats de service formalisés"]
+            ]
         else:
             rows = [
                 ["1. Produit (Product)", f"Gamme professionnelle adaptée au marché : {profile.products[0].name}", "Qualité certifiée, fiabilité d'usage et packaging valorisant"],
@@ -450,6 +488,24 @@ class ExcelReportGenerator:
                 ["Mois 4", "Achat du 1er lot de 5 000 poussins d'un jour, démarrage & plan prophylactique", "Vétérinaire / Éleveurs", "Semaines 13-16", "Phase de démarrage réussie (mortalité < 2%)"],
                 ["Mois 5", "Phase de finition, enlèvement et commercialisation du premier cycle de poulets", "Responsable Ventes", "Semaines 17-20", "28 500 poulets commercialisés sur l'année"],
                 ["Mois 6 à 12", "Enchaînement des 5 cycles suivants avec vide sanitaire rigoureux de 15 jours", "Direction / Vétérinaire", "Semaines 21-52", "6 cycles annuels menés à terme avec succès"]
+            ]
+        elif sec_id == "jus":
+            rows = [
+                ["Mois 1", "Constitution légale de la SARL, autorisations sanitaires & sécurisation du bail de l'atelier", "Direction / Notaire", "Semaines 1-4", "Statuts notariés, RCCM, Bail & Dépôt dossier sanitaire"],
+                ["Mois 2", "Aménagement de l'atelier agroalimentaire (carrelage, siphons inox, alimentation eau/élec)", "Architecte / Artisans", "Semaines 5-8", "Atelier carrelé conforme aux normes HACCP"],
+                ["Mois 3", "Acquisition, livraison et installation de la ligne d'extraction, pasteurisateur et embouteilleuse", "Fournisseurs Industriels", "Semaines 9-12", "Ligne de transformation installée et raccordée"],
+                ["Mois 4", "Essais de production à blanc, réglage pasteurisation & formation du personnel de ligne", "Responsable Qualité / Opérateurs", "Semaines 13-16", "Tests microbiologiques validés et équipe habilitée"],
+                ["Mois 5", "Campagne de lancement commercial, référencement en supermarchés & premières livraisons", "Responsable Commercial", "Semaines 17-20", "Premiers lots de 33cl et 1L commercialisés"],
+                ["Mois 6 à 12", "Production continue plein régime (3 000 L/j), gestion des stocks saisonniers & livraisons CHR", "Direction / Responsable Production", "Semaines 21-52", "Suivi qualité, volumes nominaux atteints et rentabilité assurée"]
+            ]
+        elif sec_id == "commerce_informatique":
+            rows = [
+                ["Mois 1", "Constitution légale de la SARL, immatriculation fiscale & signature du bail commercial", "Direction / Notaire", "Semaines 1-4", "Statuts, RCCM, NIF & Bail showroom sécurisé"],
+                ["Mois 2", "Aménagement du showroom, espace technique de configuration & sécurisation des locaux", "Direction / Agencement", "Semaines 5-8", "Showroom prêt à accueillir la clientèle B2B"],
+                ["Mois 3", "Acquisition du stock initial d'équipements informatiques & négociation constructeurs", "Responsable Achats", "Semaines 9-12", "Premier stock de PC, serveurs et périphériques réceptionné"],
+                ["Mois 4", "Recrutement des commerciaux B2B et techniciens réseaux & formation aux outils", "Direction / RH", "Semaines 13-16", "Équipe commerciale et technique opérationnelle"],
+                ["Mois 5", "Campagne de prospection B2B, inauguration showroom & signature premiers contrats", "Responsable Commercial", "Semaines 17-20", "Premiers parcs informatiques équipés et livrés"],
+                ["Mois 6 à 12", "Développement continu des ventes, contrats de maintenance récurrents et extension de gamme", "Direction / Équipe Commerciale", "Semaines 21-52", "Fidélisation de la clientèle PME et rentabilité commerciale pérenne"]
             ]
         elif is_comm:
             rows = [
@@ -774,12 +830,12 @@ class ExcelReportGenerator:
 
         fin = m["financing"]
         inv = m["investments"]
-        bfr = m["bfr"]
+        bfr_init = fin.get("bfr_initial", inv.get("bfr_initial", m.get("bfr", {}).get("net", 0)))
 
         besoins = [
             ["Frais d'établissement & formalités (Cpt 20)", inv["frais_etab"]],
             ["Investissements matériels & équipements (Cpt 21-24)", inv["total"]],
-            ["BFR Initial (Fonds de roulement & stocks départ)", bfr["net"]]
+            ["BFR Initial & Trésorerie de démarrage (Fonds de roulement)", bfr_init]
         ]
 
         ressources = [
@@ -815,25 +871,42 @@ class ExcelReportGenerator:
         val_ressource.number_format = f'#,##0 "{currency}"'
         cls._style_total_cell(val_ressource, bg_color=cls.GREEN_BG, font_color=cls.GREEN_TEXT)
 
+        # Ligne de Contrôle d'Équilibre Strict (Emplois - Ressources = 0)
+        ws.row_dimensions[9].height = 22
+        ctrl_label = ws.cell(row=9, column=2, value="CONTRÔLE D'ÉQUILIBRE (EMPLOIS - RESSOURCES)")
+        ctrl_label.font = Font(name="Calibri", size=9, bold=True)
+        ctrl_label.fill = PatternFill(fill_type="solid", fgColor="DCFCE7")
+        ctrl_ecart = ws.cell(row=9, column=3, value="=C8-F8")
+        ctrl_ecart.number_format = f'#,##0 "{currency}"'
+        cls._style_total_cell(ctrl_ecart, bg_color="DCFCE7", font_color=cls.GREEN_TEXT)
+
+        ctrl_statut = ws.cell(row=9, column=5, value="STATUT DU BOUCLAGE FINANCIER")
+        ctrl_statut.font = Font(name="Calibri", size=9, bold=True)
+        ctrl_statut.fill = PatternFill(fill_type="solid", fgColor="DCFCE7")
+        ctrl_verdict = ws.cell(row=9, column=6, value='=IF(C8=F8,"PARFAITEMENT ÉQUILIBRÉ (0 FCFA) ✅","DÉSÉQUILIBRE DÉTECTÉ ❌")')
+        ctrl_verdict.font = Font(name="Calibri", size=9, bold=True, color=cls.GREEN_TEXT)
+        ctrl_verdict.alignment = Alignment(horizontal="center", vertical="center")
+        ctrl_verdict.fill = PatternFill(fill_type="solid", fgColor="DCFCE7")
+
         # Ratios de Structure Financière (Normes Bancaires UEMOA)
-        cls._create_section_divider(ws, "B10:F10", "▸ RATIOS DE STRUCTURE FINANCIÈRE & CONFORMITÉ BANCAIRE")
-        ws.row_dimensions[11].height = 24
+        cls._create_section_divider(ws, "B11:F11", "▸ RATIOS DE STRUCTURE FINANCIÈRE & CONFORMITÉ BANCAIRE")
+        ws.row_dimensions[12].height = 24
         for col_idx, h in enumerate(["Règle Bancaire", "Valeur du Projet", "Norme UEMOA / CEMAC", "Verdict Bancaire"], start=2):
-            cell = ws.cell(row=11, column=col_idx, value=h)
+            cell = ws.cell(row=12, column=col_idx, value=h)
             cls._style_header_cell(cell)
 
-        part_fp = fin.get("part_fp_pct", 37.5)
+        part_fp = fin.get("part_fp_pct", 30.0)
         gearing = fin.get("gearing", 1.33)
-        frng = fin.get("frng_initial", bfr["net"])
+        frng = fin.get("frng_initial", bfr_init)
 
         struct_rows = [
-            ["Part des Fonds Propres", f"{part_fp}%", ">= 20% à 30%", "CONFORME AUX STANDARDS ✅"],
-            ["Ratio d'Endettement (Gearing)", f"{gearing}x", "< 2.0x à 2.5x", "ENDETTEMENT MAÎTRISÉ ✅"],
+            ["Part des Fonds Propres", f"{part_fp:.1f}%", ">= 20% à 30%", "CONFORME AUX STANDARDS ✅"],
+            ["Ratio d'Endettement (Gearing)", f"{gearing:.2f}x", "< 2.0x à 2.5x", "ENDETTEMENT MAÎTRISÉ ✅"],
             ["Fonds de Roulement Net (FRNG Initial)", f"{frng:,.0f} {currency}".replace(",", " "), ">= BFR Initial", "ÉQUILIBRE FINANCIER ASSURÉ ✅"]
         ]
-        cls._write_table_data(ws, 12, 2, struct_rows)
+        cls._write_table_data(ws, 13, 2, struct_rows)
         for idx in range(3):
-            ws.cell(row=12 + idx, column=5).font = Font(name="Calibri", size=10, bold=True, color=cls.GREEN_TEXT)
+            ws.cell(row=13 + idx, column=5).font = Font(name="Calibri", size=10, bold=True, color=cls.GREEN_TEXT)
 
     # =========================================================================
     # FEUILLE 12 : REMBOURSEMENT DE L'EMPRUNT BANCAIRE
@@ -1414,7 +1487,7 @@ class ExcelReportGenerator:
         sr = m["kpis"].breakeven_revenue
 
         rows = [
-            ["1. Scénario de Référence (Base)", "Conditions normales d'exploitation et de marché", ca, chg, rn, sr, "TRÈS RENTABLE & BANCABLE ✅"],
+            ["1. Scénario de Référence (Base)", "Conditions normales d'exploitation et de marché", ca, chg, rn, sr, "EXPLOITATION RENTABLE ✅"],
             ["2. Baisse des Prix de Vente (-15%)", "Pression concurrentielle sur les tarifs", "=D5*0.85", chg, "=D6-E6", "=F5*1.08", '=IF(F6>0, "VIABLE - Marge absorbante ✅", "DÉFICITAIRE - Risque de perte ❌")'],
             ["3. Baisse Sévère des Prix (-25%)", "Choc déflationniste ou baisse pouvoir d'achat", "=D5*0.75", chg, "=D7-E7", "=F5*1.18", '=IF(F7>0, "ZONE DE VIGILANCE ⚠️", "CRITIQUE - Cessation d\'exploitation ❌")'],
             ["4. Baisse des Volumes Vendus (-25%)", "Ralentissement logistique temporaire", "=D5*0.75", "=E5*0.82", "=D8-E8", "=F5*0.95", '=IF(F8>0, "RÉSILIENCE CONFIRMÉE ✅", "DÉFICITAIRE - Réduire coûts fixes ❌")'],
@@ -1447,11 +1520,21 @@ class ExcelReportGenerator:
             cls._style_header_cell(cell)
 
         k = m["kpis"]
-        altman_z = m.get("altman_z", 3.15)
+        altman_z = float(m.get("altman_z", 3.0))
         dscr_val = m.get("ratios", {}).get("dscr_avg", 2.5)
         ip_val = m.get("ratios", {}).get("profitability_index", 1.8)
         gearing_val = m.get("financing", {}).get("gearing", 2.33)
         rate_val = k.loan_interest_rate
+
+        if altman_z >= 2.90:
+            z_verdict = "ZONE SAINE (SOLVABILITÉ ÉLEVÉE) ✅"
+            z_norm = "> 2.90 (Zone Sûre)"
+        elif altman_z >= 1.23:
+            z_verdict = "ZONE GRISE (SURVEILLANCE NORMALE) ⚠️"
+            z_norm = "1.23 - 2.90 (Vigilance)"
+        else:
+            z_verdict = "ZONE DE VULNÉRABILITÉ ❌"
+            z_norm = "< 1.23 (Risque)"
 
         rows = [
             ["Valeur Actuelle Nette (VAN à 10%)", f"{k.npv:,.0f} {currency}".replace(",", " "), "> 0", "PROJET TRÈS RENTABLE ✅"],
@@ -1460,14 +1543,14 @@ class ExcelReportGenerator:
             ["Indice de Profitabilité (IP)", f"{ip_val:.2f}", "> 1.0", f"GAIN DE {round((ip_val - 1.0) * 100)} FCFA PAR 100 FCFA INVESTIS ✅"],
             ["Ratio Moyen de Couverture Dette (DSCR)", f"{dscr_val:.2f}x", ">= 1.30x", "SERVICE DE DETTE TRÈS BIEN COUVERT ✅"],
             ["Ratio d'Endettement (Dette / Fonds propres)", f"{gearing_val:.2f}x", "< 2.5x", "STRUCTURE FINANCIÈRE SOLIDE ✅"],
-            ["Score de Risque Altman Z' PME OHADA", f"{altman_z}", "> 2.90 (Zone Sûre)", "RISQUE DE DÉFAILLANCE MINIME ✅"]
+            ["Score de Risque Altman Z' PME OHADA", f"{altman_z:.2f}", z_norm, z_verdict]
         ]
         cls._write_table_data(ws, 5, 2, rows)
 
         for i in range(len(rows)):
             r = 5 + i
             cell_v = ws.cell(row=r, column=5)
-            cell_v.font = Font(name="Calibri", size=10, bold=True, color=cls.GREEN_TEXT)
+            cell_v.font = Font(name="Calibri", size=10, bold=True, color=cls.GREEN_TEXT if "✅" in rows[i][3] else (cls.AMBER_TEXT if "⚠️" in rows[i][3] else "DC2626"))
 
     # =========================================================================
     # FEUILLE 20 : TABLEAU DE BORD EXÉCUTIF (EXECUTIVE DASHBOARD)

@@ -110,7 +110,7 @@ def generate_business_plan(req: PlanRequest):
             country = parsed["country"]
 
         currency = parsed["currency"] if parsed.get("currency") and parsed["currency"] != "FCFA" else (req.currency or "FCFA")
-        project_name = parsed["company_name"] if parsed.get("company_name") and "SARL" in parsed["company_name"] else (req.company_name or parsed["company_name"])
+        project_name = parsed["company_name"] if parsed.get("company_name") else (req.company_name or "Projet Entreprise")
 
         extracted_budget = req.total_budget or parsed["total_budget"]
         extracted_years = req.horizon_years or parsed["horizon_years"] or 5
@@ -147,6 +147,28 @@ def generate_business_plan(req: PlanRequest):
             profile = SECTOR_CATALOG[sector_id]
         else:
             profile = detect_sector(req.prompt)
+
+        # Application stricte des produits explicites demandés par l'utilisateur
+        if parsed.get("explicit_products"):
+            from engine.models import ProductItem
+            profile.products = [
+                ProductItem(
+                    id=p.get("id", idx + 1),
+                    name=p["name"],
+                    description=p.get("description", p["name"]),
+                    share_pct=float(p.get("share_pct", 1.0 / len(parsed["explicit_products"]))),
+                    unit_price=float(p.get("unit_price", 1000.0))
+                )
+                for idx, p in enumerate(parsed["explicit_products"])
+            ]
+
+        # Application des contraintes opérationnelles (flotte, jours de travail)
+        if parsed.get("fleet_ops"):
+            f_ops = parsed["fleet_ops"]
+            if f_ops.get("working_days_per_year"):
+                profile.working_days_per_year = f_ops["working_days_per_year"]
+            if f_ops.get("daily_capacity") and profile.sector_id == "jus":
+                profile.base_daily_volume = round(f_ops["daily_capacity"])
 
         # 3. Calcul rigoureux du modèle financier OHADA
         fin_data = FinancialEngine.compute(

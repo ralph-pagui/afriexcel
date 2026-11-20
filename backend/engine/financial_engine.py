@@ -82,10 +82,6 @@ class FinancialEngine:
         discount_rate: Optional[float] = 0.10,
         capacity_info: Optional[str] = None
     ) -> Dict[str, Any]:
-        p1 = profile.products[0]
-        p2 = profile.products[1]
-        p3 = profile.products[2]
-
         horizon = max(3, min(horizon_years or 5, 12))
 
         # 1. Règles fiscales et sociales adaptées au pays OHADA choisi
@@ -96,8 +92,8 @@ class FinancialEngine:
         # Détection du profil d'activité : Commercial vs Industriel / Élevage
         act_text = (profile.activity + " " + profile.name).lower()
         is_commercial = any(k in act_text for k in [
-            "magasin", "boutique", "quincaillerie", "pharmacie", "détail", "jouet"
-        ]) and not any(k in act_text for k in ["ferme", "élevage", "elevage", "poulet", "volaille", "cacao", "pisciculture"])
+            "magasin", "boutique", "quincaillerie", "pharmacie", "détail", "jouet", "informatique"
+        ]) and not any(k in act_text for k in ["ferme", "élevage", "elevage", "poulet", "volaille", "cacao", "pisciculture", "jus"])
 
         # 2. CALIBRATION DU BUDGET ET DES INVESTISSEMENTS
         if target_budget and target_budget > 0:
@@ -117,12 +113,12 @@ class FinancialEngine:
         else:
             total_equipment = sum(eq.cost for eq in profile.equipment)
             frais_etablissement = 1500000
-            bfr_initial = max(round(total_equipment * 0.22), 5000000)
+            bfr_initial = max(round(total_equipment * 0.18), 5000000)
             total_besoins = total_equipment + bfr_initial + frais_etablissement
 
         # 3. VOLUMES ET CHIFFRE D'AFFAIRES
         # Calibration spécifique par secteur d'activité
-        if profile.sector_id == "aviculture" or ("poulet" in act_text and profile.sector_id not in ["transport", "agriculture", "clinique"]):
+        if profile.sector_id == "aviculture" or ("poulet" in act_text and profile.sector_id not in ["transport", "agriculture", "clinique", "jus"]):
             annual_chicks = 30000  # 5000 poussins x 6 cycles
             mortality_rate = 0.05   # 5% mortalité prévisionnelle
             marketable_broilers = round(annual_chicks * (1.0 - mortality_rate))  # 28 500 poulets
@@ -137,22 +133,27 @@ class FinancialEngine:
             # Sur 300 jours ouvrables = 6 cagettes / jour
             profile.base_daily_volume = 6
             profile.working_days_per_year = 300
+        elif profile.sector_id == "jus":
+            # Capacité nominale industrielle (3 000 L / jour sur 22 jours/mois = 264 jours)
+            # Réparti sur les bouteilles 33cl et 1L avec un taux de démarrage de 65% en An 1
+            profile.base_daily_volume = 3000
+            profile.working_days_per_year = 264
 
         base_daily = profile.base_daily_volume
         working_days = profile.working_days_per_year
 
-        vol1_day = round(base_daily * p1.share_pct)
-        vol2_day = round(base_daily * p2.share_pct)
-        vol3_day = round(base_daily * p3.share_pct)
-
-        vol1_an1 = vol1_day * working_days
-        vol2_an1 = vol2_day * working_days
-        vol3_an1 = vol3_day * working_days
-
-        ca1_an1 = round(vol1_an1 * p1.unit_price)
-        ca2_an1 = round(vol2_an1 * p2.unit_price)
-        ca3_an1 = round(vol3_an1 * p3.unit_price)
-        ca_total_an1 = ca1_an1 + ca2_an1 + ca3_an1
+        # Calcul dynamique pour tout nombre de produits (1, 2, 3...)
+        vol_day_list = []
+        vol_an1_list = []
+        ca_prods_an1 = []
+        for p in profile.products:
+            v_day = round(base_daily * p.share_pct)
+            v_an1 = v_day * working_days
+            c_an1 = round(v_an1 * p.unit_price)
+            vol_day_list.append(v_day)
+            vol_an1_list.append(v_an1)
+            ca_prods_an1.append(c_an1)
+        ca_total_an1 = sum(ca_prods_an1)
 
         # Si le budget a été imposé, ajuster les volumes pour un ratio d'exploitation cohérent
         if target_budget and target_budget > 0:
@@ -161,13 +162,17 @@ class FinancialEngine:
                 vol_scale = target_ca / max(ca_total_an1, 1)
                 profile.base_daily_volume = max(10, round(profile.base_daily_volume * vol_scale))
                 base_daily = profile.base_daily_volume
-                vol1_an1 = round(base_daily * p1.share_pct * working_days)
-                vol2_an1 = round(base_daily * p2.share_pct * working_days)
-                vol3_an1 = round(base_daily * p3.share_pct * working_days)
-                ca1_an1 = round(vol1_an1 * p1.unit_price)
-                ca2_an1 = round(vol2_an1 * p2.unit_price)
-                ca3_an1 = round(vol3_an1 * p3.unit_price)
-                ca_total_an1 = ca1_an1 + ca2_an1 + ca3_an1
+                vol_day_list = []
+                vol_an1_list = []
+                ca_prods_an1 = []
+                for p in profile.products:
+                    v_day = round(base_daily * p.share_pct)
+                    v_an1 = v_day * working_days
+                    c_an1 = round(v_an1 * p.unit_price)
+                    vol_day_list.append(v_day)
+                    vol_an1_list.append(v_an1)
+                    ca_prods_an1.append(c_an1)
+                ca_total_an1 = sum(ca_prods_an1)
 
         # Facteurs de croissance prudents sur 5 ans (10% à 15% annuel)
         growth_factors = [round(1.0 + 0.12 * i + 0.01 * (i ** 1.1), 3) for i in range(horizon)]
@@ -185,7 +190,7 @@ class FinancialEngine:
         annual_payroll = monthly_payroll_total * 12
 
         # 6. CHARGES D'EXPLOITATION PAR NATURE (SYSCOHADA)
-        is_aviculture = profile.sector_id == "aviculture" or ("poulet" in act_text and profile.sector_id not in ["transport", "agriculture", "clinique"])
+        is_aviculture = profile.sector_id == "aviculture" or ("poulet" in act_text and profile.sector_id not in ["transport", "agriculture", "clinique", "jus", "commerce_informatique"])
         sec_id = profile.sector_id
 
         if sec_id == "transport":
@@ -198,6 +203,26 @@ class FinancialEngine:
             telecom_an1 = round(ca_total_an1 * 0.012)             # Télématique GPS & télécoms
             marketing_an1 = round(ca_total_an1 * 0.015)           # Prospection commerciale B2B
             frais_bancaires_an1 = round(ca_total_an1 * 0.006)
+        elif sec_id == "jus":
+            achats_matieres_an1 = round(ca_total_an1 * 0.38)     # Mangues fraîches locales, purée & eau purifiée
+            achats_emballages_an1 = round(ca_total_an1 * 0.09)   # Bouteilles 33cl/1L, étiquettes, capsules & fardeaux
+            energie_atelier_an1 = round(ca_total_an1 * 0.035)    # Électricité pasteurisation & chambres froides
+            carburant_transport_an1 = round(ca_total_an1 * 0.025) # Véhicules utilitaires isothermes
+            maintenance_an1 = round(ca_total_an1 * 0.025)        # Maintenance ligne de soutirage & pasteurisateur
+            assurances_an1 = round(ca_total_an1 * 0.012)         # Assurance industrielle & responsabilité produit
+            telecom_an1 = round(ca_total_an1 * 0.008)             # Télécoms & ERP logistique
+            marketing_an1 = round(ca_total_an1 * 0.025)          # Dégustations CHR/GMS & promotion
+            frais_bancaires_an1 = round(ca_total_an1 * 0.006)
+        elif sec_id == "commerce_informatique":
+            achats_matieres_an1 = round(ca_total_an1 * 0.55)     # Matériels informatiques, serveurs & composants
+            achats_emballages_an1 = round(ca_total_an1 * 0.015)   # Emballages, consommables & câblage
+            energie_atelier_an1 = round(ca_total_an1 * 0.018)    # Électricité showroom & labo SAV
+            carburant_transport_an1 = round(ca_total_an1 * 0.015) # Véhicule technique de livraison et intervention
+            maintenance_an1 = round(ca_total_an1 * 0.012)        # Maintenance équipements & outillage
+            assurances_an1 = round(ca_total_an1 * 0.010)         # Assurance stocks & RC pro
+            telecom_an1 = round(ca_total_an1 * 0.012)             # Connexion fibre optique haut débit & téléphonie
+            marketing_an1 = round(ca_total_an1 * 0.020)          # Référencement B2B & prospection directe
+            frais_bancaires_an1 = round(ca_total_an1 * 0.008)
         elif sec_id == "agriculture":
             achats_matieres_an1 = round(ca_total_an1 * 0.26)     # Semences hybrides & fertilisants NPK
             achats_emballages_an1 = round(ca_total_an1 * 0.06)   # Cagettes de récolte 25kg
@@ -456,6 +481,16 @@ class FinancialEngine:
         ratio_gearing = round(emprunt_bancaire / max(apport_personnel, 1), 2)
         frng_initial = apport_personnel + emprunt_bancaire - total_equipment - frais_etablissement
 
+        # Score Altman Z' PME adapté aux entreprises non cotées (modèle émergent)
+        tot_act = max(b_an1["total_actif"], 1)
+        x1 = (b_an1["stocks"] + b_an1["creances"] - b_an1["dettes_fourn"]) / tot_act
+        x2 = b_an1["reserves"] / tot_act
+        x3 = an1["rex"] / tot_act
+        tot_liab = max(b_an1["dettes_fin"] + b_an1["dettes_fourn"], 1)
+        x4 = b_an1["total_capitaux_propres"] / tot_liab
+        x5 = an1["ca"] / tot_act
+        altman_z = round(0.717 * x1 + 0.847 * x2 + 3.107 * x3 + 0.420 * x4 + 0.998 * x5, 2)
+
         kpis = KPIOverview(
             total_investment=total_besoins,
             equity_promoter=apport_personnel,
@@ -490,11 +525,11 @@ class FinancialEngine:
             "horizon_years": horizon,
             "growth_factors": growth_factors,
             "volumes": {
-                "day": [vol1_day, vol2_day, vol3_day],
-                "an1": [vol1_an1, vol2_an1, vol3_an1]
+                "day": vol_day_list,
+                "an1": vol_an1_list
             },
             "ca": {
-                "products_an1": [ca1_an1, ca2_an1, ca3_an1],
+                "products_an1": ca_prods_an1,
                 "years_ca": ca_years,
                 "five_years": ca_years
             },
@@ -502,6 +537,7 @@ class FinancialEngine:
                 "total": total_equipment,
                 "annual_amort": annual_amort,
                 "frais_etab": frais_etablissement,
+                "bfr_initial": bfr_initial,
                 "gross_capex_total": gross_capex_total
             },
             "payroll": {
@@ -511,6 +547,7 @@ class FinancialEngine:
             },
             "financing": {
                 "total_besoins": total_besoins,
+                "bfr_initial": bfr_initial,
                 "apport": apport_personnel,
                 "emprunt": emprunt_bancaire,
                 "part_fp_pct": part_fp_pct,
@@ -533,6 +570,7 @@ class FinancialEngine:
             "bilan_5years": bilan_5years,
             "tresorerie_5years": tresorerie_5y,
             "dscr_series": dscr_series,
+            "altman_z": altman_z,
             "seuil_rentabilite": {
                 "ca": ca_total_an1,
                 "cv": cv,

@@ -192,30 +192,66 @@ SECTOR_CATALOG: Dict[str, SectorProfile] = {
     # 6. AGRO-TRANSFORMATION & JUS DE FRUITS NATURELS
     "jus": SectorProfile(
         sector_id="jus",
-        name="Unité de Transformation & Jus de Fruits Naturels Pasteurisés",
-        activity="Pressage, pasteurisation et conditionnement de jus d'ananas, mangue, gingembre et bissap en bouteilles verre recyclables",
-        unit="Bouteille 33cl / 1L",
-        base_daily_volume=500,
-        working_days_per_year=280,
-        raw_materials_desc="Fruits frais locaux (Ananas pain de sucre, mangues kente, racines de gingembre, calices d'hibiscus/bissap), sucre de canne, bouteilles verre 33cl/1L et capsules twist-off",
+        name="Unité Agro-Industrielle & Transformation de Fruits",
+        activity="Transformation industrielle de fruits frais, pasteurisation et conditionnement de jus naturels en bouteilles",
+        unit="Bouteille",
+        base_daily_volume=2000,
+        working_days_per_year=264,
+        raw_materials_desc="Mangues fraîches locales, eau purifiée, bouteilles verre/PET 33cl et 1L, capsules hermétiques et étiquettes",
         products=[
-            ProductItem(id=1, name="Pur Jus d'Ananas Pain de Sucre 100% Naturel", description="Bouteille en verre 33cl sans conservateur ni eau ajoutée", share_pct=0.45, unit_price=600),
-            ProductItem(id=2, name="Cocktail Énergisant Gingembre-Ananas-Bissap", description="Bouteille en verre 33cl aux épices naturelles", share_pct=0.35, unit_price=700),
-            ProductItem(id=3, name="Jus de Mangue Onctueux format familial 1L", description="Bouteille 1L verre hermétique pour réceptions et hôtels", share_pct=0.20, unit_price=1500)
+            ProductItem(id=1, name="Jus de mangue naturel pasteurisé (Bouteille 33 cl)", description="Bouteille individuelle 33cl pur jus naturel sans additif", share_pct=0.50, unit_price=500),
+            ProductItem(id=2, name="Jus de mangue naturel pasteurisé (Bouteille 1 Litre)", description="Format familial 1L pour hôtels, restaurants et grande distribution", share_pct=0.50, unit_price=1200)
         ],
         equipment=[
-            EquipmentItem(name="Presse hydraulique industrielle & extracteur de jus inox", cost=5500000, duration_years=5, depreciation_rate=0.20),
-            EquipmentItem(name="Pasteurisateur tubulaire continu en acier inoxydable 300L/h", cost=6500000, duration_years=6, depreciation_rate=0.166),
-            EquipmentItem(name="Ligne de soutirage remplisseuse-capsuleuse semi-automatique", cost=4500000, duration_years=5, depreciation_rate=0.20),
-            EquipmentItem(name="Bacs de lavage fruits avec bullage d'air & table de parage", cost=2000000, duration_years=5, depreciation_rate=0.20),
-            EquipmentItem(name="Chambre froide positive 15m³ pour stockage fruits & jus", cost=4500000, duration_years=5, depreciation_rate=0.20),
-            EquipmentItem(name="Véhicule utilitaire de distribution supermarchés & maquis", cost=5500000, duration_years=4, depreciation_rate=0.25)
+            EquipmentItem(name="Ligne de lavage, brossage & parage fruits avec convoyeur inox", cost=8500000, duration_years=5, depreciation_rate=0.20),
+            EquipmentItem(name="Dépulpeuse / extracteur industriel de pulpe de fruits 1500 kg/h inox", cost=12000000, duration_years=5, depreciation_rate=0.20),
+            EquipmentItem(name="Cuves de préparation & formulation inox 3000L thermorégulées", cost=9500000, duration_years=6, depreciation_rate=0.166),
+            EquipmentItem(name="Pasteurisateur tubulaire continu à plaques 1000 L/h inox", cost=14000000, duration_years=6, depreciation_rate=0.166),
+            EquipmentItem(name="Ligne automatique de soutirage, remplisseuse-boucheuse rotative", cost=16500000, duration_years=5, depreciation_rate=0.20),
+            EquipmentItem(name="Étiqueteuse automatique & fardeleuse sous film rétractable", cost=7500000, duration_years=5, depreciation_rate=0.20),
+            EquipmentItem(name="Chambre froide positive 40m³ pour stockage produits finis", cost=9000000, duration_years=6, depreciation_rate=0.166),
+            EquipmentItem(name="Matériel de laboratoire de contrôle qualité (Brix, pH, stérilité)", cost=4500000, duration_years=4, depreciation_rate=0.25),
+            EquipmentItem(name="2 Véhicules utilitaires isothermes de distribution", cost=16000000, duration_years=4, depreciation_rate=0.25),
+            EquipmentItem(name="Installation hydraulique, traitement d'eau & groupe électrogène 50 kVA", cost=12500000, duration_years=5, depreciation_rate=0.20),
+            EquipmentItem(name="Aménagement du bâtiment industriel aux normes sanitaires HACCP", cost=15000000, duration_years=8, depreciation_rate=0.125)
         ],
         staff=[
-            StaffItem(title="Responsable Agroalimentaire & Gérant", count=1, monthly_net=380000, monthly_cnps=65000),
-            StaffItem(title="Opérateur Pasteurisateur & Contrôle Qualité", count=1, monthly_net=220000, monthly_cnps=37000),
-            StaffItem(title="Opérateurs Épluchage, Pressage & Remplissage", count=3, monthly_net=110000, monthly_cnps=18000),
-            StaffItem(title="Commercial Grande Distribution & Horeca", count=1, monthly_net=150000, monthly_cnps=25000)
+            StaffItem(title="Directeur d'Usine / Ingénieur Agroalimentaire", count=1, monthly_net=450000, monthly_cnps=72000),
+            StaffItem(title="Responsable Qualité & Laboratoire", count=1, monthly_net=300000, monthly_cnps=48000),
+            StaffItem(title="Technicien de Maintenance Industrielle", count=1, monthly_net=250000, monthly_cnps=40000),
+            StaffItem(title="Opérateurs de Ligne de Transformation", count=4, monthly_net=120000, monthly_cnps=19200),
+            StaffItem(title="Responsable Commercial & Distribution", count=1, monthly_net=250000, monthly_cnps=40000),
+            StaffItem(title="Comptable & Gestionnaire de Stocks", count=1, monthly_net=220000, monthly_cnps=35200),
+            StaffItem(title="Chauffeurs-Livreurs professionnels", count=2, monthly_net=140000, monthly_cnps=22400)
+        ]
+    ),
+
+    # 6b. COMMERCE & DISTRIBUTION DE MATÉRIEL INFORMATIQUE
+    "commerce_informatique": SectorProfile(
+        sector_id="commerce_informatique",
+        name="Distribution & Commerce de Matériel Informatique",
+        activity="Vente en gros et demi-gros d'ordinateurs, serveurs, périphériques réseaux et maintenance informatique",
+        unit="Équipement / Article",
+        base_daily_volume=15,
+        working_days_per_year=312,
+        raw_materials_desc="Constructeurs et grossistes officiels (HP, Dell, Lenovo, Cisco, APC, Epson, Canon), licences officielles",
+        products=[
+            ProductItem(id=1, name="Ordinateurs portables professionnels & Stations de travail", description="PC portables robustes configurés pour entreprises, bureautique et CAO", share_pct=0.50, unit_price=350000),
+            ProductItem(id=2, name="Serveurs d'entreprise, Réseaux & Onduleurs", description="Équipements d'infrastructure réseau, switchs managés et serveurs rack", share_pct=0.30, unit_price=450000),
+            ProductItem(id=3, name="Périphériques, Imprimantes & Maintenance informatique", description="Imprimantes multifonctions, consommables certifiés et contrats de support", share_pct=0.20, unit_price=85000)
+        ],
+        equipment=[
+            EquipmentItem(name="Aménagement showroom commercial, vitrines & rayonnages sécurisés", cost=4500000, duration_years=5, depreciation_rate=0.20),
+            EquipmentItem(name="Véhicule utilitaire de livraison matériel et interventions", cost=6000000, duration_years=4, depreciation_rate=0.25),
+            EquipmentItem(name="Système informatique ERP de caisse, code-barres & gestion stock", cost=2500000, duration_years=3, depreciation_rate=0.33),
+            EquipmentItem(name="Baie de tests, outillage de diagnostic & atelier SAV informatique", cost=3000000, duration_years=4, depreciation_rate=0.25),
+            EquipmentItem(name="Climatisation showroom & bureau, rideau métallique de sécurité", cost=2000000, duration_years=5, depreciation_rate=0.20)
+        ],
+        staff=[
+            StaffItem(title="Gérant Commercial & Acheteur", count=1, monthly_net=400000, monthly_cnps=64000),
+            StaffItem(title="Technicien Supérieur Informatique & SAV", count=1, monthly_net=220000, monthly_cnps=35000),
+            StaffItem(title="Commercial B2B Grands Comptes", count=1, monthly_net=180000, monthly_cnps=29000),
+            StaffItem(title="Vendeuse-Caissière Magasin", count=1, monthly_net=120000, monthly_cnps=19000)
         ]
     ),
 

@@ -163,7 +163,7 @@ def detect_or_get_template(template_id: str = None, prompt_text: str = "", activ
     """
     from .prompt_parser import PromptParser
     parsed = PromptParser.parse(prompt_text + " " + activity_text)
-    effective_sec_id = sector_id or parsed.get("sector_id", "transport")
+    effective_sec_id = sector_id or parsed.get("sector_id", "general")
 
     if template_id and template_id in TEMPLATE_CATALOG and template_id != "auto":
         base_tpl = TEMPLATE_CATALOG[template_id]
@@ -171,8 +171,8 @@ def detect_or_get_template(template_id: str = None, prompt_text: str = "", activ
 
     # Sélection du thème de design selon la nature du projet
     agro_sectors = ["aviculture", "agriculture", "plantation_cacao", "pisciculture", "jus", "chocolaterie", "savonnerie"]
-    tech_sectors = ["numerique_saas", "energie_solaire"]
-    commerce_sectors = ["magasin_jouets", "quincaillerie", "restaurant", "textile", "boulangerie"]
+    tech_sectors = ["numerique_saas", "energie_solaire", "commerce_informatique"]
+    commerce_sectors = ["magasin_jouets", "quincaillerie", "restaurant", "textile", "boulangerie", "commerce_general"]
     corp_sectors = ["transport", "clinique", "pharmacie", "btp", "education"]
 
     if effective_sec_id in agro_sectors:
@@ -196,42 +196,122 @@ def _adapt_template_text(base: ThemeConfig, prompt_text: str, activity_text: str
 
     txt = (prompt_text + " " + activity_text).lower()
 
-    # 1. Transport & Logistique de marchandises
-    if sector_id == "transport" or any(w in txt for w in ["transport", "fret", "logistique", "camion", "camions"]):
+    # Priorité 1 : Matching strict par sector_id
+    if sector_id == "jus":
+        tpl.subtitle = "Industrie Agroalimentaire & Transformation de Fruits"
+        tpl.tagline = "Valorisation des fruits locaux en jus naturels de qualité supérieure"
+        tpl.vision_quote = "Bâtir une référence industrielle de la transformation agroalimentaire locale, saine et compétitive."
+        return tpl
+
+    if sector_id == "commerce_informatique":
+        tpl.subtitle = "Distribution & Services Informatiques, Réseaux & Équipements"
+        tpl.tagline = "Solutions technologiques performantes et équipements informatiques de pointe"
+        tpl.vision_quote = "Accompagner la transformation numérique des entreprises par des équipements et services fiables."
+        return tpl
+
+    if sector_id == "transport":
         tpl.subtitle = "Transport Routier, Interurbain & Fret Logistique"
         tpl.tagline = "Connecter les corridors économiques avec rapidité, sécurité et fiabilité"
         tpl.vision_quote = "Devenir le partenaire logistique de référence pour le transport de marchandises en Afrique de l'Ouest."
+        return tpl
 
-    # 2. Agriculture maraîchère & Tomates
-    elif sector_id == "agriculture" or any(w in txt for w in ["tomate", "maraîchage", "maraichage", "légume", "hectare", "irrigation"]):
-        tpl.subtitle = "Agro-Business, Maraîchage & Cultures Maraîchères Durables"
-        tpl.tagline = "Valoriser la terre africaine par des cultures saines, productives et locales"
-        tpl.vision_quote = "Garantir un approvisionnement régulier en légumes frais et de qualité supérieure aux marchés locaux."
-
-    # 3. Santé, Clinique & Laboratoire d'analyses
-    elif sector_id == "clinique" or any(w in txt for w in ["clinique", "médical", "medical", "laboratoire", "analyse", "analyses", "biologie", "soins"]):
-        tpl.subtitle = "Santé, Biologie Médicale & Analyses de Proximité"
-        tpl.tagline = "Précision diagnostique, excellence clinique et accessibilité des soins"
-        tpl.vision_quote = "Offrir un plateau technique médical de pointe garantissant des diagnostics fiables et bienveillants."
-
-    # 4. Élevage Avicole (strictement si aviculture)
-    elif sector_id == "aviculture" or any(w in txt for w in ["poulet", "poussin", "volaille", "avicole", "couvoir"]):
+    if sector_id == "aviculture":
         tpl.subtitle = "Élevage Avicole & Production de Volailles de Chair"
         tpl.tagline = "Excellence agro-pastorale, traçabilité et disponibilité locale continue"
         tpl.vision_quote = "Bâtir une filière avicole moderne et souveraine au service de l'alimentation de qualité."
+        return tpl
 
-    # 5. Cacao & Agro-foresterie
-    elif sector_id == "plantation_cacao" or "cacao" in txt:
+    if sector_id == "agriculture":
+        tpl.subtitle = "Agro-Business, Maraîchage & Cultures Maraîchères Durables"
+        tpl.tagline = "Valoriser la terre africaine par des cultures saines, productives et locales"
+        tpl.vision_quote = "Garantir un approvisionnement régulier en légumes frais et de qualité supérieure aux marchés locaux."
+        return tpl
+
+    if sector_id == "plantation_cacao":
         tpl.subtitle = "Exploitation Cacaoyère & Filière d'Excellence"
         tpl.tagline = "Valoriser le terroir africain avec des fèves de qualité supérieure"
         tpl.vision_quote = "Produire durablement en alliant rentabilité agro-écologique et qualité export."
+        return tpl
 
-    # 6. Jouets & Commerce
-    elif sector_id == "magasin_jouets" or "jouet" in txt:
+    if sector_id == "pisciculture":
+        tpl.subtitle = "Aquaculture Moderne & Élevage Piscicole"
+        tpl.tagline = "Production durable de poissons de qualité supérieure en bassins aménagés"
+        tpl.vision_quote = "Contribuer à la sécurité alimentaire par une aquaculture moderne et rentable."
+        return tpl
+
+    if sector_id == "clinique":
+        tpl.subtitle = "Santé, Biologie Médicale & Analyses de Proximité"
+        tpl.tagline = "Précision diagnostique, excellence clinique et accessibilité des soins"
+        tpl.vision_quote = "Offrir un plateau technique médical de pointe garantissant des diagnostics fiables et bienveillants."
+        return tpl
+
+    if sector_id == "pharmacie":
+        tpl.subtitle = "Officine Pharmaceutique & Produits de Santé"
+        tpl.tagline = "Disponibilité continue des médicaments essentiels et conseil pharmaceutique de pointe"
+        tpl.vision_quote = "Sécuriser l'accès aux soins et aux produits de santé avec une rigueur absolue."
+        return tpl
+
+    if sector_id == "magasin_jouets":
         tpl.subtitle = "Commerce de Détail, Jouets & Éveil Enfants"
         tpl.tagline = "Éveiller l'imaginaire et accompagner l'épanouissement des enfants"
         tpl.vision_quote = "Devenir la référence incontournable du jeu éducatif de qualité."
+        return tpl
 
+    if sector_id == "quincaillerie":
+        tpl.subtitle = "Commerce de Matériaux de Construction & Quincaillerie Générale"
+        tpl.tagline = "Fourniture fiable de matériaux et d'outillages pour le bâtiment et l'industrie"
+        tpl.vision_quote = "Être le partenaire privilégié des artisans, chantiers et constructeurs locaux."
+        return tpl
+
+    if sector_id == "boulangerie":
+        tpl.subtitle = "Boulangerie-Pâtisserie Artisanale & Moderne"
+        tpl.tagline = "Pains frais, viennoiseries dorées et saveurs authentiques au quotidien"
+        tpl.vision_quote = "Offrir chaque matin des produits de boulangerie frais, sains et savoureux."
+        return tpl
+
+    if sector_id == "restaurant":
+        tpl.subtitle = "Restauration & Gastronomie"
+        tpl.tagline = "Saveurs authentiques, convivialité et excellence du service"
+        tpl.vision_quote = "Offrir une expérience culinaire raffinée et accessible valorisant les saveurs locales."
+        return tpl
+
+    if sector_id == "energie_solaire":
+        tpl.subtitle = "Énergies Renouvelables & Solutions Solaires"
+        tpl.tagline = "L'énergie propre et durable au cœur du développement africain"
+        tpl.vision_quote = "Fournir une énergie solaire continue et compétitive aux entreprises et ménages."
+        return tpl
+
+    if sector_id == "numerique_saas":
+        tpl.subtitle = "Technologies Numériques, Solutions Logicielles & SaaS"
+        tpl.tagline = "Solutions logicielles scalables et transformation digitale"
+        tpl.vision_quote = "Digitaliser les processus métiers avec agilité et robustesse technologique."
+        return tpl
+
+    # Priorité 2 : Détection par mots-clés spécifiques uniquement si sector_id inconnu
+    if any(w in txt for w in ["jus de", "bouteille de jus", "mangue", "ananas", "fruits"]):
+        tpl.subtitle = "Industrie Agroalimentaire & Transformation de Fruits"
+        tpl.tagline = "Valorisation des fruits locaux en jus naturels de qualité supérieure"
+        tpl.vision_quote = "Bâtir une référence industrielle de la transformation agroalimentaire locale, saine et compétitive."
+    elif any(w in txt for w in ["informatique", "ordinateur", "matériel informatique", "serveurs", "réseaux"]):
+        tpl.subtitle = "Distribution & Services Informatiques, Réseaux & Équipements"
+        tpl.tagline = "Solutions technologiques performantes et équipements informatiques de pointe"
+        tpl.vision_quote = "Accompagner la transformation numérique des entreprises par des équipements et services fiables."
+    elif any(w in txt for w in ["camion de transport", "transport routier", "fret routier"]):
+        tpl.subtitle = "Transport Routier, Interurbain & Fret Logistique"
+        tpl.tagline = "Connecter les corridors économiques avec rapidité, sécurité et fiabilité"
+        tpl.vision_quote = "Devenir le partenaire logistique de référence pour le transport de marchandises en Afrique de l'Ouest."
+    elif any(w in txt for w in ["poulet", "poussin", "volaille", "avicole", "couvoir"]):
+        tpl.subtitle = "Élevage Avicole & Production de Volailles de Chair"
+        tpl.tagline = "Excellence agro-pastorale, traçabilité et disponibilité locale continue"
+        tpl.vision_quote = "Bâtir une filière avicole moderne et souveraine au service de l'alimentation de qualité."
+    elif any(w in txt for w in ["tomate", "maraîchage", "maraichage", "légume"]):
+        tpl.subtitle = "Agro-Business, Maraîchage & Cultures Maraîchères Durables"
+        tpl.tagline = "Valoriser la terre africaine par des cultures saines, productives et locales"
+        tpl.vision_quote = "Garantir un approvisionnement régulier en légumes frais et de qualité supérieure aux marchés locaux."
+    elif any(w in txt for w in ["clinique", "médical", "medical", "laboratoire d'analyses"]):
+        tpl.subtitle = "Santé, Biologie Médicale & Analyses de Proximité"
+        tpl.tagline = "Précision diagnostique, excellence clinique et accessibilité des soins"
+        tpl.vision_quote = "Offrir un plateau technique médical de pointe garantissant des diagnostics fiables et bienveillants."
     else:
         tpl.subtitle = "Entreprise Commerciale & Prestations de Services"
         tpl.tagline = "Rigueur opérationnelle, performance financière et pérennité"
