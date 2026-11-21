@@ -233,6 +233,16 @@ class FinancialEngine:
             telecom_an1 = round(ca_total_an1 * 0.010)             # Passerelles IoT de monitoring & télécoms
             marketing_an1 = round(ca_total_an1 * 0.025)          # Salons professionnels B2B, marketing digital & prospection
             frais_bancaires_an1 = round(ca_total_an1 * 0.006)
+        elif sec_id == "education":
+            achats_matieres_an1 = round(ca_total_an1 * 0.08)     # Supports de cours imprimés, manuels & fournitures pédagogiques
+            achats_emballages_an1 = round(ca_total_an1 * 0.03)   # Fournitures administratives, attestations & diplômes
+            energie_atelier_an1 = round(ca_total_an1 * 0.035)    # Électricité climatisation salles de formation & salle informatique
+            carburant_transport_an1 = round(ca_total_an1 * 0.015) # Logistique & déplacements formateurs
+            maintenance_an1 = round(ca_total_an1 * 0.025)        # Maintenance parc informatique (20 PC), vidéoprojecteurs & réseau
+            assurances_an1 = round(ca_total_an1 * 0.010)         # Responsabilité civile établissement & multirisque locaux
+            telecom_an1 = round(ca_total_an1 * 0.045)             # Connexion Internet Fibre Optique Pro haut débit & licences logicielles
+            marketing_an1 = round(ca_total_an1 * 0.035)          # Campagnes réseaux sociaux, salons étudiants & prospection entreprises
+            frais_bancaires_an1 = round(ca_total_an1 * 0.006)
         elif sec_id == "agriculture":
             achats_matieres_an1 = round(ca_total_an1 * 0.26)     # Semences hybrides & fertilisants NPK
             achats_emballages_an1 = round(ca_total_an1 * 0.06)   # Cagettes de récolte 25kg

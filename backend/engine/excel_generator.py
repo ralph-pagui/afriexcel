@@ -211,6 +211,9 @@ class ExcelReportGenerator:
         elif sec_id == "energie_solaire":
             appro_label = "Approvisionnement Panneaux Solaires Tier-1, Onduleurs Hybrides & Batteries Lithium"
             norme_label = "Normes internationales CE/IEC 61215/61730, habilitation électricien photovoltaïque B2V/BR & conformité CI-ENERGIES"
+        elif sec_id == "education":
+            appro_label = "Approvisionnement Licences Logicielles, Fournitures Pédagogiques & Matériel Informatique"
+            norme_label = "Agrément du Ministère de la Formation Professionnelle, conformité aux référentiels métiers, RCCM & NINEA"
         elif is_comm:
             norme_label = "Conformité stricte aux règles commerciales, immatriculation RCCM & IFU/NINEA local"
         else:
@@ -305,6 +308,12 @@ class ExcelReportGenerator:
                 ["Installateurs Informels / Électriciens Bâtiment", "Artisans électriciens sans qualification solaire", "Prix bas négociés au coup par coup", "Matériel contrefait ou déclassé, sous-dimensionnement, pannes de batteries en <6 mois, risque d'incendie", "Dimensionnement rigoureux par logiciel PV, matériel Tier-1 certifié, garanties constructeur et sécurité"],
                 ["Grandes Multinationales de l'Énergie", "Filiales de majors énergétiques internationales", "Très forte capacité financière, grands parcs solaires MW", "Inadaptées aux besoins des PME et résidences, devis très longs, tarifs prohibitifs", "Agilité d'intervention sous 48h, tarification compétitive PME/résidentiel et service de proximité"],
                 ["Distributeurs Vendeurs de Kits sans Pose", "Comptoirs d'importation vendant des kits au carton", "Disponibilité de stock en magasin", "Aucune ingénierie d'installation, absence de SAV et aucun suivi après-vente", "Offre clés en main : étude d'ingénierie, pose certifiée, raccordement et contrat de maintenance récurrent"]
+            ]
+        elif sec_id == "education":
+            comp_rows = [
+                ["Formations en Ligne Informelles / Autodidactes", "Tutoriels vidéo et plateformes en ligne gratuites sans encadrement", "Gratuité ou coûts faibles", "Aucun suivi pédagogique, pas de pratique encadrée, fort taux d'abandon, certificats non reconnus", "Encadrement présentiel par experts, salle équipée de 20 PC, projets pratiques et attestations certifiées"],
+                ["Grandes Écoles Supérieures Généralistes", "Établissements d'enseignement supérieur académique", "Notoriété académique et diplômes d'État", "Frais de scolarité très onéreux (1M à 2.5M FCFA/an), cursus longs et théoriques déconnectés du marché", "Formations professionnalisantes courtes et intensives, tarifs très compétitifs (150k à 225k FCFA)"],
+                ["Cabinets de Conseil B2B Haut de Gamme", "Consultants indépendants ciblant uniquement les directions générales", "Expertise pointue sur mesure", "Tarifs prohibitifs inaccessibles aux étudiants, jeunes diplômés et créateurs d'entreprise", "Offre modulaire accessible à tous les profils (étudiants, entrepreneurs, salariés) avec horaires flexibles"]
             ]
         else:
             comp_rows = [
@@ -427,6 +436,16 @@ class ExcelReportGenerator:
                 ["6. Processus (Process)", "Audit de charge, dimensionnement par logiciel, pose, raccordement, mise en service et formation client", "Contrôle qualité strict à chaque étape et raccordement sécurisé"],
                 ["7. Preuve Matérielle (Physical)", "Véhicules floqués équipés, outillage de mesure étalonné et livret technique d'exploitation", "Certificats de garantie matérielle constructeur (25 ans panneaux, 10 ans batteries) et attestation de conformité"]
             ]
+        elif sec_id == "education":
+            rows = [
+                ["1. Produit (Product)", f"Programmes certifiants axés sur la pratique : {profile.products[0].name}", "Pédagogie active 70% pratique / 30% théorie, 1 PC par apprenant, cas réels d'entreprise"],
+                ["2. Prix (Price)", f"Tarification accessible et facilités de paiement : de {p1_price:,.0f} à {p_last_price:,.0f} {currency}".replace(",", " "), "Tarifs étudiés pour rentabiliser rapidement la formation grâce à l'insertion professionnelle immédiate"],
+                ["3. Distribution (Place)", "Centre moderne en plein cœur de Dakar, facile d'accès en transports en commun", "3 salles climatisées de 25 places, salle informatique équipée de 20 PC, groupe électrogène de secours"],
+                ["4. Promotion (Promotion)", "Marketing digital intensif (Facebook, LinkedIn, TikTok), partenariats universités et webinaires", "Séances découvertes gratuites, témoignages d'anciens apprenants et journées portes ouvertes"],
+                ["5. Personnel (People)", "Formateurs professionnels en activité, consultants certifiés et équipe d'accueil dédiée", "Expertise terrain réelle, pédagogie bienveillante et suivi personnalisé de chaque apprenant"],
+                ["6. Processus (Process)", "Inscription en ligne, test de positionnement, formation pratique, évaluation continue et remise d'attestation", "Suivi post-formation et mise en relation avec le réseau d'entreprises partenaires"],
+                ["7. Preuve Matérielle (Physical)", "Locaux modernes climatisés, réseau haut débit fibre optique, attestations sécurisées avec QR code", "Attestation officielle et portfolio de projets réalisés par l'apprenant"]
+            ]
         else:
             rows = [
                 ["1. Produit (Product)", f"Gamme professionnelle adaptée au marché : {profile.products[0].name}", "Qualité certifiée, fiabilité d'usage et packaging valorisant"],
@@ -534,6 +553,15 @@ class ExcelReportGenerator:
                 ["Mois 4", "Approvisionnement stock initial (panneaux Tier-1, onduleurs, batteries lithium) & logiciels dimensionnement", "Responsable Achats", "Semaines 13-16", "Composants solaires réceptionnés et inventoriés"],
                 ["Mois 5", "Campagne commerciale B2B/résidentiel, premières études de charge & premières installations", "Ingénieur Commercial", "Semaines 17-20", "Premiers systèmes résidentiels et centrales PME installés"],
                 ["Mois 6 à 12", "Montée en puissance des installations (résidentiel, PME, pros) & contrats de maintenance récurrents", "Directeur Technique / Équipe", "Semaines 21-52", "Capacité annuelle atteinte et rentabilité consolidée"]
+            ]
+        elif sec_id == "education":
+            rows = [
+                ["Mois 1", "Constitution légale de la SARL, dépôt dossier d'agrément ministériel & signature bail", "Promoteur / Notaire", "Semaines 1-4", "Statuts notariés, RCCM, NINEA & Bail commercial Dakar"],
+                ["Mois 2", "Aménagement des 3 salles de cours, espace accueil, câblage réseau et climatisation", "Architecte d'intérieur / Artisans", "Semaines 5-8", "Locaux aménagés, climatisés et insonorisés"],
+                ["Mois 3", "Acquisition et installation des 20 PC, vidéoprojecteurs, mobilier et groupe électrogène secours", "Responsable IT / Fournisseurs", "Semaines 9-12", "Salle informatique opérationnelle et réseau testé"],
+                ["Mois 4", "Recrutement des formateurs vacataires experts, finalisation des supports & campagne lancement", "Directeur Pédagogique / Com", "Semaines 13-16", "Équipe pédagogique validée et 50 premières inscriptions"],
+                ["Mois 5", "Démarrage des premières sessions de formation (Bureautique, Compta, Entrepreneuriat)", "Directeur des Études / Formateurs", "Semaines 17-20", "Premières promotions en cours de formation"],
+                ["Mois 6 à 12", "Montée en puissance progressive jusqu'à 240 apprenants/an, diplomations & partenariats B2B", "Direction / Responsable Partenariats", "Semaines 21-52", "Objectif de fréquentation nominal atteint et rentabilité assurée"]
             ]
         elif is_comm:
             rows = [

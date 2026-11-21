@@ -68,6 +68,11 @@ class QualityControl:
             "camion porteur", "fret routier", "poulet", "poussin", "volaille", "avicole", "couvoir",
             "clinique", "médical", "medical", "consultation", "jus de", "bouteille de jus", "mangue",
             "hectare", "maraîchage", "tomate"
+        ],
+        "education": [
+            "poulet", "poussin", "volaille", "avicole", "couvoir",
+            "gondole", "gamme star", "caisse tactile", "tricycle", "cacao", "chocolat",
+            "jus de mangue", "camion porteur", "fret routier", "panneau solaire"
         ]
     }
 

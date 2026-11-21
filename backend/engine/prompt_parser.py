@@ -15,7 +15,9 @@ class PromptParser:
     @classmethod
     def parse(cls, prompt: str, default_country: str = "Bénin", default_currency: str = "FCFA") -> Dict[str, Any]:
         """Extrait l'ensemble des informations structurées et crée un contexte projet verrouillé."""
-        text = prompt.strip()
+        # Nettoyage préventif des balises Markdown (*, _, #, `) pour que les regex ne soient jamais perturbées
+        clean_text = re.sub(r'[*_#`]', '', prompt).strip()
+        text = clean_text
         lower = text.lower()
 
         # 1. Détection chirurgicale du secteur d'activité par scoring multi-mots d'abord
@@ -145,6 +147,7 @@ class PromptParser:
             "agriculture": "AGRI TOMATE SARL",
             "plantation_cacao": "CACAO EXCELLENCE SARL",
             "clinique": "POLYCLINIQUE ET BIOLOGIE SARL",
+            "education": "DIGITAL SKILLS ACADEMY SARL" if ("senegal" in country.lower() or "sénégal" in country.lower() or "dakar" in text.lower()) else "CENTRE DE FORMATION EXCELLENCE SARL",
             "magasin_jouets": "AFRIQUE DISTRIBUTION SARL"
         }
         return defaults.get(sector_id, "ENTREPRISE AGRO-INDUSTRIE SARL")
@@ -317,7 +320,7 @@ class PromptParser:
         if m_millions:
             return float(m_millions.group(1).replace(',', '.')) * 1_000_000
 
-        m_num = re.search(r'(?:budget|investissement|montant|co[uû]t)\s*(?:total|initial|global|estimatif|pr[eé]vu|souhait[eé]|du\s+projet|\s+)*[:=-]?\s*(\d[\d\s]{5,})\s*(?:fcfa|f\s*cfa|xof|xaf)?\b', text, re.I)
+        m_num = re.search(r'(?:budget|investissement|montant|co[uû]t)\s*(?:total|initial|global|estim[ée]|estimatif|pr[eé]vu|souhait[eé]|du\s+projet|\s+)*[:=-]?\s*(\d[\d\s]{5,})\s*(?:fcfa|f\s*cfa|xof|xaf)?\b', text, re.I)
         if m_num:
             digits = re.sub(r'\s+', '', m_num.group(1))
             if digits.isdigit():
@@ -494,6 +497,35 @@ class PromptParser:
                 }
             ]
 
+        # Cas 5 : Éducation, École & Formation Professionnelle
+        if sector_id == "education":
+            return [
+                {
+                    "id": 1,
+                    "name": "Programme 1 : Bureautique et compétences numériques",
+                    "description": "Formation pratique bureautique, outils collaboratifs, navigation web et compétences digitales de base (120 apprenants/an)",
+                    "format": "Apprenant / Session",
+                    "share_pct": 0.50,
+                    "unit_price": 150000.0
+                },
+                {
+                    "id": 2,
+                    "name": "Programme 2 : Comptabilité et gestion d'entreprise",
+                    "description": "Formation pratique comptabilité SYSCOHADA, gestion budgétaire, logiciels de gestion et fiscalité PME (60 apprenants/an)",
+                    "format": "Apprenant / Session",
+                    "share_pct": 0.25,
+                    "unit_price": 225000.0
+                },
+                {
+                    "id": 3,
+                    "name": "Programme 3 : Entrepreneuriat et création d'entreprise",
+                    "description": "Méthodologie d'élaboration de business plan, gestion commerciale, marketing et levée de fonds (60 apprenants/an)",
+                    "format": "Apprenant / Session",
+                    "share_pct": 0.25,
+                    "unit_price": 180000.0
+                }
+            ]
+
         return []
 
     @classmethod
@@ -556,6 +588,14 @@ class PromptParser:
                 r'\bsolaire[s]?\b', r'\bphotovolta[ïi]que[s]?\b', r'\bpanneau[x]?\b',
                 r'\bonduleur[s]?\b', r'\bbatterie[s]?\b', r'\bkwc\b', r'\brenouvelable[s]?\b',
                 r'\br[ée]gulateur[s]?\b', r'\bkit[s]?\s+solaire[s]?\b'
+            ],
+            "education": [
+                r'\b[ée]ducation\b', r'\bformation\b', r'\bcentre\s+de\s+formation\b',
+                r'\bapprenant[s]?\b', r'\b[ée]l[èe]ve[s]?\b', r'\b[ée]tudiant[s]?\b',
+                r'\bformateur[s]?\b', r'\benseignant[s]?\b', r'\bp[ée]dagogique[s]?\b',
+                r'\bcours\b', r'\baccalaur[ée]at\b', r'\bac[ée]d[ée]mie\b', r'\bacademy\b',
+                r'\bsalle\s+informatique\b', r'\bdipl[ôo]m[ée][s]?\b', r'\bsalle[s]?\s+de\s+formation\b',
+                r'\bbureautique\b', r'\bcomp[ée]tences\s+num[ée]riques\b'
             ]
         }
 
@@ -569,6 +609,8 @@ class PromptParser:
         m_sec = re.search(r'(?:secteur|sous-secteur|activit[ée]\s+principale)\s*[:=-]\s*([^\n\r,.;]+)', lower)
         if m_sec:
             sec_text = m_sec.group(1)
+            if any(w in sec_text for w in ["éducation", "education", "formation", "école", "ecole", "académie", "academy", "enseignement"]):
+                scores["education"] += 50
             if any(w in sec_text for w in ["solaire", "photovoltaïque", "photovoltaique", "renouvelable", "énergie", "energie"]):
                 scores["energie_solaire"] += 50
             if any(w in sec_text for w in ["jus", "fruit", "mangue", "agroalimentaire", "boisson", "transformation"]):
