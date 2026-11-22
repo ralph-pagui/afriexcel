@@ -9,17 +9,20 @@ export interface AIResponse {
   suggestedFollowUp?: string;
 }
 
-// Clés API Gemini configurées via variables d'environnement Vite
+// Import sécurisé des clés (local_keys.ts ignoré par git)
+import { LOCAL_GEMINI_KEYS, LOCAL_GROQ_KEYS } from './local_keys';
+
+// Clés API Gemini configurées via variables d'environnement Vite ou clés locales
 const envGeminiKeys = (import.meta as any).env?.VITE_GEMINI_API_KEYS || (import.meta as any).env?.VITE_GEMINI_API_KEY || '';
 const GEMINI_KEYS: string[] = envGeminiKeys
   ? envGeminiKeys.split(',').map((k: string) => k.trim()).filter(Boolean)
-  : ['DEMO_GEMINI_API_KEY'];
+  : (LOCAL_GEMINI_KEYS || []);
 
-// Clés Groq de secours configurées via variables d'environnement Vite
+// Clés Groq de secours configurées via variables d'environnement Vite ou clés locales
 const envGroqKeys = (import.meta as any).env?.VITE_GROQ_API_KEYS || (import.meta as any).env?.VITE_GROQ_API_KEY || '';
 const GROQ_KEYS: string[] = envGroqKeys
   ? envGroqKeys.split(',').map((k: string) => k.trim()).filter(Boolean)
-  : ['DEMO_GROQ_API_KEY'];
+  : (LOCAL_GROQ_KEYS || []);
 
 let currentGeminiKeyIndex = 0;
 let currentGroqKeyIndex = 0;
@@ -36,8 +39,13 @@ export class AIService {
     const totalKeys = GEMINI_KEYS.length;
     let lastError = null;
 
-    // Modèles Gemini par ordre de priorité
-    const modelsToTry = ["gemini-3.6-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
+    // Modèles Gemini par ordre de priorité (Gemini 3.6 Flash en priorité absolue)
+    const modelsToTry = [
+      "gemini-3.6-flash",
+      "gemini-3.5-flash-lite",
+      "gemini-3-flash-preview",
+      "gemini-3.5-flash"
+    ];
 
     // Construction de l'historique multi-tours propre
     const sanitizedContents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
@@ -69,7 +77,8 @@ export class AIService {
       for (const model of modelsToTry) {
         try {
           const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 14000);
+          const timeoutMs = model.includes("3.6") ? 32000 : 16000;
+          const timer = setTimeout(() => controller.abort(), timeoutMs);
 
           const requestBody = {
             contents: sanitizedContents,
@@ -102,13 +111,13 @@ export class AIService {
             }
           } else {
             console.warn(`[Gemini Key #${keyIndex + 1}] HTTP ${response.status} sur modèle ${model}`);
-            if (response.status === 404) continue;
+            if (response.status === 404 || response.status === 503) continue;
             break;
           }
         } catch (err: any) {
           lastError = err;
-          console.warn(`[Gemini Key #${keyIndex + 1}] Erreur : ${err?.message || err}`);
-          break;
+          console.warn(`[Gemini Key #${keyIndex + 1}] Erreur sur ${model} : ${err?.message || err}`);
+          continue;
         }
       }
     }

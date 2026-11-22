@@ -10,8 +10,13 @@ dist/
 
 # Environnement et clés secrètes
 .env
-.env.local
-.env.*.local
+.env*
+*.env
+addin-frontend/.env*
+backend/.env*
+**/local_keys.*
+local_keys.*
+
 
 # Python
 __pycache__/

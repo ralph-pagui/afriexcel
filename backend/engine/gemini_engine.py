@@ -1,6 +1,6 @@
 """
 Moteur d'intelligence artificielle Gemini Flash pour AfriExcel Backend.
-Utilise les 7 clés API avec rotation automatique et cascade de modèles haute disponibilité.
+Intègre Gemini 3.6 Flash avec rotation automatique des 7 clés API officielles et cascade haute disponibilité.
 """
 
 import os
@@ -8,24 +8,40 @@ import json
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from .models import SectorProfile, ProductItem, EquipmentItem, StaffItem
 
-# Rotation de clés Gemini via variables d'environnement (sécurisé pour production)
-_raw_keys = os.environ.get("GEMINI_API_KEYS", "") or os.environ.get("GEMINI_API_KEY", "")
-GEMINI_KEYS = [k.strip() for k in _raw_keys.split(",") if k.strip()]
-if not GEMINI_KEYS:
-    GEMINI_KEYS = [os.environ.get("GEMINI_API_KEY", "DEMO_GEMINI_API_KEY")]
+# Chargement sécurisé des clés (Variables d'environnement > Fichier local local_keys.py)
+try:
+    from .local_keys import GEMINI_KEYS as _LOCAL_GEMINI, GROQ_KEYS as _LOCAL_GROQ
+except ImportError:
+    _LOCAL_GEMINI = []
+    _LOCAL_GROQ = []
 
-MODELS_CASCADE = ["gemini-3.6-flash", "gemini-2.5-flash", "gemini-flash-latest"]
+_raw_keys = os.environ.get("GEMINI_API_KEYS", "") or os.environ.get("GEMINI_API_KEY", "")
+GEMINI_KEYS = [k.strip() for k in _raw_keys.split(",") if k.strip()] if _raw_keys else _LOCAL_GEMINI
+
+_raw_groq = os.environ.get("GROQ_API_KEYS", "") or os.environ.get("GROQ_API_KEY", "")
+GROQ_KEYS = [k.strip() for k in _raw_groq.split(",") if k.strip()] if _raw_groq else _LOCAL_GROQ
+
+# Modèles Gemini par ordre de puissance et disponibilité
+# Gemini 3.6 Flash est le modèle principal exigé par l'utilisateur
+MODELS_CASCADE = [
+    "gemini-3.6-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-3-flash-preview",
+    "gemini-3.5-flash"
+]
 
 # Session HTTP partagée avec pool de connexions persistant
 _session = requests.Session()
-_adapter = HTTPAdapter(pool_connections=10, pool_maxsize=10, max_retries=Retry(total=2, backoff_factor=0.5))
+_adapter = HTTPAdapter(pool_connections=15, pool_maxsize=15, max_retries=Retry(total=2, backoff_factor=0.5))
 _session.mount("https://", _adapter)
+
 
 class GeminiSectorEngine:
     current_key_idx = 0
+    current_groq_idx = 0
 
     @classmethod
     def generate_dynamic_sector(
@@ -38,7 +54,7 @@ class GeminiSectorEngine:
         clean_topic: Optional[str] = None
     ) -> Optional[SectorProfile]:
         """
-        Interroge Gemini 3.6 Flash (avec cascade automatique vers 2.5 Flash) pour concevoir un profil sectoriel
+        Interroge Gemini 3.6 Flash (avec cascade automatique et rotation de clés) pour concevoir un profil sectoriel
         100% sur-mesure et rigoureusement calibré sur le budget et l'activité demandée par l'utilisateur.
         """
         budget_clause = ""
@@ -82,12 +98,13 @@ GÉNÈRE STRICTEMENT UN OBJET JSON CONFORME À CETTE STRUCTURE :
   ]
 }}
 RÈGLES STRICTES :
-1. Les équipements doivent correspondre EXACTEMENT et UNIQUEMENT au métier demandé (ex: pour un magasin de jouets : rayonnages colorés, bacs et gondoles, caisse tactile et logiciel stock, climatiseur boutique, enseigne lumineuse enfantine, kit vidéosurveillance).
+1. Les équipements doivent correspondre EXACTEMENT et UNIQUEMENT au métier demandé.
 2. Les montants doivent être réalistes pour l'Afrique de l'Ouest/Centrale en {currency}.
-3. Le total des share_pct des produits doit être rigoureusement égal à 1.0 (ex: 0.45 + 0.35 + 0.20 = 1.0)."""
+3. Le total des share_pct des produits doit être rigoureusement égal à 1.0."""
 
         num_keys = len(GEMINI_KEYS)
 
+        # 1. Tentatives avec Gemini 3.6 Flash et cascade
         for attempt in range(num_keys):
             key_idx = (cls.current_key_idx + attempt) % num_keys
             api_key = GEMINI_KEYS[key_idx]
@@ -103,8 +120,11 @@ RÈGLES STRICTES :
                     }
                 }
 
+                # Timeout de 32s pour Gemini 3.6 Flash, 15s pour les versions lite
+                req_timeout = 32 if "3.6" in model else 16
+
                 try:
-                    r = _session.post(url, json=body, timeout=16)
+                    r = _session.post(url, json=body, timeout=req_timeout)
                     if r.status_code == 200:
                         data = r.json()
                         text = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
@@ -116,13 +136,56 @@ RÈGLES STRICTES :
                                 print(f"[Gemini Flash] Modélisation sectorielle générée avec succès via {model} (Clé #{key_idx + 1})")
                                 return profile
                     else:
-                        print(f"[Gemini Flash] Modèle {model} (Clé #{key_idx + 1}) a répondu avec le statut {r.status_code}, basculement vers le modèle suivant...")
+                        print(f"[Gemini Flash] Modèle {model} (Clé #{key_idx + 1}) statut {r.status_code}, basculement...")
                         continue
                 except Exception as e:
                     print(f"[Gemini Flash] Modèle {model} (Clé #{key_idx + 1}) timeout/erreur ({type(e).__name__}), basculement...")
                     continue
 
-        print("[Gemini Flash] Toutes les tentatives d'IA dynamique ont échoué, basculement vers le catalogue de secours.")
+        # 2. Secours Groq si toutes les clés Gemini sont saturées
+        print("[Gemini Flash] Tentative de basculement sur le réseau de secours Groq...")
+        groq_profile = cls._call_groq_fallback(user_prompt, system_instruction, country)
+        if groq_profile:
+            return groq_profile
+
+        print("[Gemini Flash] Toutes les tentatives d'IA dynamique ont échoué, basculement vers le catalogue local.")
+        return None
+
+    @classmethod
+    def _call_groq_fallback(cls, user_prompt: str, system_instruction: str, country: str) -> Optional[SectorProfile]:
+        """Appel au réseau Groq en secours si les clés Gemini sont indisponibles."""
+        num_groq = len(GROQ_KEYS)
+        for attempt in range(num_groq):
+            key_idx = (cls.current_groq_idx + attempt) % num_groq
+            gkey = GROQ_KEYS[key_idx]
+            try:
+                r = _session.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {gkey}", "Content-Type": "application/json"},
+                    json={
+                        "model": "openai/gpt-oss-120b",
+                        "messages": [
+                            {"role": "system", "content": system_instruction},
+                            {"role": "user", "content": f"Génère le modèle sectoriel bancable OHADA sur mesure pour : '{user_prompt}' à implanter en {country}."}
+                        ],
+                        "response_format": {"type": "json_object"},
+                        "temperature": 0.15,
+                        "max_tokens": 3000
+                    },
+                    timeout=15
+                )
+                if r.status_code == 200:
+                    data = r.json()
+                    content = data["choices"][0]["message"]["content"]
+                    parsed = json.loads(content)
+                    profile = cls._dict_to_profile(parsed)
+                    if profile:
+                        cls.current_groq_idx = (key_idx + 1) % num_groq
+                        print(f"[Groq Fallback] Modélisation sectorielle générée avec succès via Groq (Clé #{key_idx + 1})")
+                        return profile
+            except Exception as e:
+                print(f"[Groq Fallback] Clé #{key_idx + 1} erreur ({type(e).__name__})")
+                continue
         return None
 
     @classmethod
