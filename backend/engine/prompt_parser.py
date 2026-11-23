@@ -33,10 +33,11 @@ class PromptParser:
         # 4. Extraction de la Devise (FCFA, GNF, USD, EUR)
         currency = cls._extract_currency(text, country, default_currency)
 
-        # 5. Extraction des paramètres de financement (Apport, Emprunt, Taux, Durée)
+        # 5. Extraction des paramètres de financement (Apport, Emprunt, Taux, Durée, Différé)
         equity_ratio, loan_ratio, has_explicit_financing = cls._extract_financing_split(text)
         loan_interest_rate, has_explicit_interest_rate = cls._extract_interest_rate(text)
         loan_duration_years = cls._extract_loan_duration(text)
+        grace_period_months = cls._extract_grace_period(text)
 
         # 6. Extraction de l'horizon prévisionnel
         horizon_years = cls._extract_horizon_years(text)
@@ -100,6 +101,7 @@ class PromptParser:
             "loan_interest_rate": loan_interest_rate,
             "has_explicit_interest_rate": has_explicit_interest_rate,
             "loan_duration_years": loan_duration_years,
+            "grace_period_months": grace_period_months,
             "horizon_years": horizon_years,
             "total_budget": total_budget,
             "capacity_info": capacity_info,
@@ -146,6 +148,7 @@ class PromptParser:
             "aviculture": "AVICOLA PLUS SARL",
             "agriculture": "AGRI TOMATE SARL",
             "plantation_cacao": "CACAO EXCELLENCE SARL",
+            "transformation_manioc": "CAMEROUN AGRO MANIOC INDUSTRIES SARL" if "cameroun" in country.lower() else "AFRIQUE AGRO MANIOC INDUSTRIES SARL",
             "clinique": "POLYCLINIQUE ET BIOLOGIE SARL",
             "education": "DIGITAL SKILLS ACADEMY SARL" if ("senegal" in country.lower() or "sénégal" in country.lower() or "dakar" in text.lower()) else "CENTRE DE FORMATION EXCELLENCE SARL",
             "magasin_jouets": "AFRIQUE DISTRIBUTION SARL"
@@ -296,10 +299,18 @@ class PromptParser:
     @classmethod
     def _extract_loan_duration(cls, text: str) -> int:
         """Extrait la durée de remboursement de l'emprunt bancaire."""
-        m = re.search(r'(?:remboursement|durée\s+(?:de\s+l[\'’]emprunt|du\s+prêt|du\s+financement)?)\s*(?:sur)?\s*[:=-]?\s*(\d+)\s*ans?\b', text, re.I)
+        m = re.search(r'(?:remboursement|durée\s+(?:de\s+l[\'’]emprunt|du\s+prêt|du\s+financement|du\s+crédit)?)\s*(?:sur)?\s*[:=-]?\s*(\d+)\s*ans?\b', text, re.I)
         if m:
             return max(1, min(int(m.group(1)), 15))
         return 5
+
+    @classmethod
+    def _extract_grace_period(cls, text: str) -> int:
+        """Extrait la durée du différé de remboursement du capital (en mois)."""
+        m = re.search(r'diff[ée]r[ée](?:\s+de\s+remboursement(?:\s+du\s+capital)?)?\s*[:=-]?\s*(\d+)\s*mois\b', text, re.I)
+        if m:
+            return int(m.group(1))
+        return 0
 
     @classmethod
     def _extract_horizon_years(cls, text: str) -> int:
@@ -551,10 +562,16 @@ class PromptParser:
             "numerique_saas": 0,
             "energie_solaire": 0,
             "btp": 0,
-            "education": 0
+            "education": 0,
+            "transformation_manioc": 0
         }
 
         lexicon = {
+            "transformation_manioc": [
+                r'\bmanioc\b', r'\bcassava\b', r'\bamidon\b', r'\bfarine\s+panifiable\b',
+                r'\btubercule[s]?\b', r'\bhqcf\b', r'\bs[ée]choir\s+flash\b', r'\bflash\s+dryer\b',
+                r'\br[âa]peuse\b'
+            ],
             "jus": [
                 r'\bjus\b', r'\bmangue[s]?\b', r'\bananas\b', r'\bbissap\b',
                 r'\bpasteurisat(?:eur|ion)\b', r'\bembouteillage\b', r'\btransformation de fruits\b',
@@ -623,11 +640,17 @@ class PromptParser:
                 scores["agriculture"] += 40
             if any(w in sec_text for w in ["aviculture", "élevage", "poulet", "volaille"]):
                 scores["aviculture"] += 40
+            if any(w in sec_text for w in ["manioc", "amidon", "panifiable", "tubercule"]):
+                scores["transformation_manioc"] += 80
             if any(w in sec_text for w in ["santé", "médical", "clinique", "laboratoire"]):
                 scores["clinique"] += 40
 
+        if any(w in lower for w in ["manioc", "cassava", "amidon", "panifiable"]):
+            scores["transformation_manioc"] += 80
+
         best_sector = max(scores, key=scores.get)
         names = {
+            "transformation_manioc": "Unité Industrielle de Transformation du Manioc en Farine Panifiable et Amidon",
             "jus": "Unité Agro-Industrielle & Transformation de Fruits",
             "commerce_informatique": "Distribution & Commerce de Matériel Informatique",
             "transport": "Transport Urbain, Interurbain & Logistique",

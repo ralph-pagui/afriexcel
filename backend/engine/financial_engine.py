@@ -79,6 +79,7 @@ class FinancialEngine:
         loan_ratio: Optional[float] = None,
         loan_interest_rate: Optional[float] = None,
         loan_duration_years: Optional[int] = None,
+        grace_period_months: int = 0,
         discount_rate: Optional[float] = 0.10,
         capacity_info: Optional[str] = None
     ) -> Dict[str, Any]:
@@ -288,19 +289,37 @@ class FinancialEngine:
         apport_personnel = round(total_besoins * final_equity_ratio)
         emprunt_bancaire = total_besoins - apport_personnel
 
-        # 8. TABLEAU D'AMORTISSEMENT DU CRÉDIT BANCAIRE (TAUX ANNUEL FIXE, AMORTISSEMENT CONSTANT)
+        # 8. TABLEAU D'AMORTISSEMENT DU CRÉDIT BANCAIRE (TAUX ANNUEL FIXE, AMORTISSEMENT ADAPTÉ AU DIFFÉRÉ)
         loan_schedule = []
         cap_restant = emprunt_bancaire
-        capital_amort_an = round(emprunt_bancaire / loan_years) if loan_years > 0 else 0
+
+        # Prise en compte du différé de remboursement du capital (ex: 6 mois)
+        if grace_period_months >= 12:
+            capital_amort_an1 = 0
+            capital_amort_next = round(emprunt_bancaire / max(loan_years - 1, 1)) if loan_years > 1 else emprunt_bancaire
+        elif grace_period_months > 0:
+            fraction_active = (12 - grace_period_months) / 12.0
+            amort_base = emprunt_bancaire / max(loan_years - (grace_period_months / 12.0) * 0.5, 1)
+            capital_amort_an1 = round(amort_base * fraction_active)
+            capital_amort_next = round((emprunt_bancaire - capital_amort_an1) / max(loan_years - 1, 1))
+        else:
+            capital_amort_an1 = round(emprunt_bancaire / loan_years) if loan_years > 0 else 0
+            capital_amort_next = capital_amort_an1
 
         for y in range(1, loan_years + 1):
             cap_debut = cap_restant
             interets = round(cap_debut * final_interest_rate)
-            principal = capital_amort_an if y < loan_years else cap_debut
+            if y == 1:
+                principal = capital_amort_an1
+            elif y < loan_years:
+                principal = capital_amort_next
+            else:
+                principal = cap_debut  # Solder exactement le capital restant dû
             annuite = principal + interets
             cap_fin = max(0, cap_debut - principal)
+            year_label = f"Année {y}" + (f" (Différé {grace_period_months}m)" if y == 1 and grace_period_months > 0 else "")
             loan_schedule.append({
-                "year": f"Année {y}",
+                "year": year_label,
                 "start_capital": cap_debut,
                 "interest": interets,
                 "principal": principal,

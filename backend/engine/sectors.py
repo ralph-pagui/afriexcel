@@ -597,6 +597,43 @@ SECTOR_CATALOG: Dict[str, SectorProfile] = {
             StaffItem(title="Enseignants permanents qualifiés", count=6, monthly_net=180000, monthly_cnps=29000),
             StaffItem(title="Surveillant général et personnel d'entretien", count=2, monthly_net=110000, monthly_cnps=18000)
         ]
+    ),
+
+    # 18. TRANSFORMATION INDUSTRIELLE DU MANIOC (FARINE PANIFIABLE ET AMIDON)
+    "transformation_manioc": SectorProfile(
+        sector_id="transformation_manioc",
+        name="Unité Industrielle de Transformation du Manioc en Farine Panifiable et Amidon",
+        activity="Collecte de tubercules de manioc frais (20 t/j), épluchage, râpage, déshydratation hydraulique, séchage flash automatisé, mouture fine, conditionnement de farine panifiable certifiée (HQCF) et extraction d'amidon industriel.",
+        unit="Sac 25 kg / Sac 50 kg",
+        base_daily_volume=200,
+        working_days_per_year=250,
+        raw_materials_desc="Tubercules de manioc frais bord-champ (variétés améliorées riches en matière sèche, approvisionnement auprès des coopératives régionales), sacs kraft multicouches doublés polyéthylène 25 kg et 50 kg, consommables d'analyse laboratoire HACCP et palettes traitées.",
+        products=[
+            ProductItem(id=1, name="Farine de manioc panifiable enrichie (HQCF 25 kg)", description="Farine panifiable conforme normes pour incorporation à 15-20% dans le pain", share_pct=0.55, unit_price=11250),
+            ProductItem(id=2, name="Amidon de manioc industriel extra-pur (Sac 50 kg)", description="Amidon pour industries agroalimentaires, textile et papeterie", share_pct=0.35, unit_price=30000),
+            ProductItem(id=3, name="Cossettes séchées & résidus valorisés (Sac 50 kg)", description="Sous-produits fibreux déshydratés pour provenderies et bétail", share_pct=0.10, unit_price=7500)
+        ],
+        equipment=[
+            EquipmentItem(name="Ligne semi-automatique de lavage, épluchage & décantation inox (20 t/j)", cost=12500000, duration_years=8, depreciation_rate=0.125),
+            EquipmentItem(name="Râpeuse industrielle inox haute cadence et broyeur à marteaux", cost=8500000, duration_years=6, depreciation_rate=0.166),
+            EquipmentItem(name="Presse hydraulique industrielle continue de déshydratation", cost=7500000, duration_years=6, depreciation_rate=0.166),
+            EquipmentItem(name="Séchoir flash thermique automatisé (Flash Dryer) haute performance", cost=16000000, duration_years=8, depreciation_rate=0.125),
+            EquipmentItem(name="Broyeur-affineur, tamis vibrant rotatif et cyclone séparateur", cost=6500000, duration_years=6, depreciation_rate=0.166),
+            EquipmentItem(name="Ligne de pesage, ensachage sous vide et thermosoudage automatique", cost=4500000, duration_years=5, depreciation_rate=0.20),
+            EquipmentItem(name="Groupe électrogène de secours industriel 60 kVA insonorisé", cost=7500000, duration_years=6, depreciation_rate=0.166),
+            EquipmentItem(name="Camion benne 10 tonnes pour collecte bord-champ des tubercules", cost=14500000, duration_years=5, depreciation_rate=0.20),
+            EquipmentItem(name="Bâtiment d'usine, dalle béton armé aux normes HACCP & stockage", cost=15000000, duration_years=10, depreciation_rate=0.10),
+            EquipmentItem(name="Laboratoire de contrôle qualité (taux d'humidité, pureté) et mobilier", cost=3500000, duration_years=5, depreciation_rate=0.20)
+        ],
+        staff=[
+            StaffItem(title="Directeur d'Usine / Ingénieur Agroalimentaire", count=1, monthly_net=450000, monthly_cnps=72000),
+            StaffItem(title="Responsable Assurance Qualité & Laboratoire", count=1, monthly_net=280000, monthly_cnps=45000),
+            StaffItem(title="Conducteurs de ligne industrielle (Râpage, Séchoir flash)", count=3, monthly_net=160000, monthly_cnps=26000),
+            StaffItem(title="Technicien de Maintenance Électromécanique", count=1, monthly_net=200000, monthly_cnps=32000),
+            StaffItem(title="Opérateurs d'ensachage, manutention & stockage", count=4, monthly_net=110000, monthly_cnps=18000),
+            StaffItem(title="Chauffeur-Livreur & Collecteur bord-champ", count=2, monthly_net=130000, monthly_cnps=21000),
+            StaffItem(title="Responsable Commercial & Logistique B2B", count=1, monthly_net=220000, monthly_cnps=35000)
+        ]
     )
 }
 

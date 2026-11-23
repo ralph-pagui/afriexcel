@@ -181,6 +181,7 @@ def generate_business_plan(req: PlanRequest):
             loan_ratio=loan_ratio,
             loan_interest_rate=loan_interest_rate,
             loan_duration_years=loan_duration_years,
+            grace_period_months=parsed.get("grace_period_months", 0),
             discount_rate=req.discount_rate or 0.10,
             capacity_info=parsed.get("capacity_info")
         )

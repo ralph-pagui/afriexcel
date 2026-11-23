@@ -21,6 +21,13 @@ export interface BusinessPlanOptions {
   sheetCount?: number;
   template_id?: string;
   sheetsToGenerate?: string[];
+  equityRatio?: number;
+  loanRatio?: number;
+  loanInterestRate?: number;
+  loanDurationYears?: number;
+  gracePeriodMonths?: number;
+  totalBudget?: number;
+  targetBudget?: number;
   onProgress?: (sheetName: string, index: number, total: number) => void;
 }
 
@@ -101,13 +108,16 @@ export const BP_THEMES: Record<string, BpTheme> = {
 export function detectBpTheme(topic?: string, templateId?: string): BpTheme {
   if (templateId && BP_THEMES[templateId]) return BP_THEMES[templateId];
   const t = (topic || '').toLowerCase();
-  if (/jouet|boutique|magasin|commerce|vente|mode|restaurant|cosmétique|quincaillerie|détail|supermarché/.test(t)) {
+  if (/manioc|cassava|amidon|agri|agro|cacao|chocolat|poulet|avicole|fruit|jus|terroir|ferme|plantation|savon|karité/.test(t)) {
+    return BP_THEMES.emerald_africa;
+  }
+  if (/jouet|boutique|magasin|commerce|vente|mode|restaurant|quincaillerie|détail|supermarché/.test(t)) {
     return BP_THEMES.sahara_commerce;
   }
-  if (/tech|logiciel|app|digital|saas|fintech|startup|plateforme|ia|intelligence|cloud|web/.test(t)) {
+  if (/tech|logiciel|app|digital|saas|fintech|startup|plateforme|ia|intelligence|cloud|web|formation|skills|academy/.test(t)) {
     return BP_THEMES.cyber_indigo;
   }
-  if (/banque|finance|fonds|industrie|usine|btp|immobilier|logistique/.test(t)) {
+  if (/banque|finance|fonds|industrie|usine|btp|immobilier|logistique|transport/.test(t)) {
     return BP_THEMES.royal_navy;
   }
   return BP_THEMES.emerald_africa;
@@ -123,6 +133,74 @@ export class BusinessPlanService {
       .replace(/^(?:projet\s+(?:de\s+|d'|d’)?|création\s+(?:de\s+|d'|d’)?|fabrication\s+(?:de\s+|d'|d’)?|production\s+(?:de\s+|d'|d’)?|atelier\s+(?:de\s+|d'|d’)?|usine\s+(?:de\s+|d'|d’)?)/i, '')
       .replace(/^(?:mon|ma|mes|notre|nos|un|une|le|la|les|du|de\s+la|des)\s+/i, '')
       .trim();
+
+    // -1. Unité Industrielle de Transformation du Manioc (Farine Panifiable et Amidon)
+    if (text.includes('manioc') || text.includes('cassava') || text.includes('amidon') || text.includes('farine panifiable') || (text.includes('tubercule') && (text.includes('transformation') || text.includes('usine')))) {
+      return {
+        activity: "Unité industrielle de transformation du manioc en farine panifiable et amidon",
+        unit: "Sac 25 kg / Sac 50 kg",
+        sector: "agri",
+        products: [
+          [1, "Farine de manioc panifiable enrichie (HQCF 25 kg)", "Farine panifiable pour incorporation à 15-20% dans le pain sous sac kraft étanche", 0.55, 11250],
+          [2, "Amidon de manioc industriel extra-pur (Sac 50 kg)", "Amidon industriel haute viscosité pour agroalimentaire et papeterie", 0.35, 30000],
+          [3, "Cossettes séchées & résidus valorisés (Sac 50 kg)", "Sous-produits fibreux déshydratés pour provenderies et bétail", 0.10, 7500]
+        ],
+        equipment: [
+          ["Ligne semi-automatique de lavage, épluchage & décantation inox (20 t/j)", 12500000, 8, 0.125],
+          ["Râpeuse industrielle inox haute cadence et broyeur à marteaux", 8500000, 6, 0.166],
+          ["Presse hydraulique industrielle continue de déshydratation", 7500000, 6, 0.166],
+          ["Séchoir flash thermique automatisé (Flash Dryer) haute performance", 16000000, 8, 0.125],
+          ["Broyeur-affineur, tamis vibrant rotatif et cyclone séparateur", 6500000, 6, 0.166],
+          ["Ligne de pesage, ensachage sous vide et thermosoudage automatique", 4500000, 5, 0.20],
+          ["Groupe électrogène de secours industriel 60 kVA insonorisé", 7500000, 6, 0.166],
+          ["Camion benne 10 tonnes pour collecte bord-champ des tubercules frais", 14500000, 5, 0.20],
+          ["Bâtiment d'usine, dalle béton armé aux normes HACCP & stockage", 15000000, 10, 0.10],
+          ["Laboratoire de contrôle qualité (taux d'humidité, pureté) et mobilier", 3500000, 5, 0.20]
+        ],
+        staff: [
+          ["Directeur d'Usine / Ingénieur Agroalimentaire", 1, 450000],
+          ["Responsable Assurance Qualité & Laboratoire", 1, 280000],
+          ["Conducteurs de ligne industrielle (Râpage, Séchoir flash)", 3, 160000],
+          ["Technicien de Maintenance Électromécanique", 1, 200000],
+          ["Opérateurs d'ensachage, manutention & stockage", 4, 110000],
+          ["Chauffeur-Livreur & Collecteur bord-champ", 2, 130000],
+          ["Responsable Commercial & Logistique B2B", 1, 220000]
+        ],
+        rawMaterials: "Tubercules de manioc frais bord-champ (variétés améliorées riches en matière sèche), sacs kraft multicouches doublés polyéthylène 25kg/50kg, consommables de laboratoire HACCP et palettes traitées"
+      };
+    }
+
+    // -0. Centre de Formation Professionnelle & Éducation (Digital Skills Academy)
+    if (text.includes('formation') || text.includes('académie') || text.includes('academy') || text.includes('skills') || text.includes('centre de formation') || text.includes('école') || text.includes('ecole')) {
+      return {
+        activity: "Centre moderne de formation professionnelle aux métiers du numérique, gestion et entrepreneuriat",
+        unit: "Apprenant certifié / Module",
+        sector: "services",
+        products: [
+          [1, "Programme Bureautique & Compétences Numériques", "Formation certifiante pack Office, web et outils collaboratifs (120 apprenants/an)", 0.50, 150000],
+          [2, "Programme Comptabilité & Gestion d'Entreprise", "Formation pratique aux logiciels comptables SYSCOHADA et gestion (60 apprenants/an)", 0.25, 225000],
+          [3, "Programme Entrepreneuriat & Création d'Entreprise", "Incubation, élaboration de business plan et montage de projet (60 apprenants/an)", 0.25, 180000]
+        ],
+        equipment: [
+          ["Aménagement de 3 salles de formation climatisées (25 apprenants par salle)", 6000000, 8, 0.125],
+          ["Parc informatique : 25 ordinateurs fixes/portables Core i5, SSD et écrans 24\"", 9500000, 4, 0.25],
+          ["Équipements audiovisuels, vidéoprojecteurs interactifs & sonorisation", 3500000, 4, 0.25],
+          ["Mobilier pédagogique ergonomique (75 tables, chaises et pupitres formateurs)", 4500000, 6, 0.166],
+          ["Infrastructure réseau Wi-Fi 6 haute densité, baie de brassage & switchs", 2500000, 5, 0.20],
+          ["Système d'alimentation électrique de secours (Groupe 15 kVA et onduleurs online)", 3500000, 5, 0.20],
+          ["Licences logicielles pédagogiques, systèmes et abonnements haut débit", 2500000, 3, 0.33],
+          ["Espace accueil, reprographie professionnelle et mobilier administratif", 3000000, 6, 0.166]
+        ],
+        staff: [
+          ["Directeur Pédagogique / Responsable du Centre", 1, 400000],
+          ["Formateurs experts permanents (Numérique, Gestion, Entrepreneuriat)", 3, 220000],
+          ["Responsable Administratif, Inscriptions & Accueil", 1, 150000],
+          ["Technicien Support Informatique & Réseaux", 1, 140000],
+          ["Responsable Partenariats Entreprises & Insertion", 1, 180000]
+        ],
+        rawMaterials: "Supports pédagogiques imprimés, clés USB cours, fournitures de bureau, attestations et certificats sécurisés, consommables reprographie"
+      };
+    }
 
     // 0. Chocolaterie & Cacao
     if (text.includes('chocolat') || text.includes('cacao') || text.includes('confiserie') || text.includes('praline') || text.includes('pâte à tartiner')) {
@@ -440,6 +518,11 @@ export class BusinessPlanService {
       equipment, totalEquipment, annualAmort,
       fraisEtablissement, bfrInitial, totalBesoins,
       emprunt, apportPersonnel, interetsAn1,
+      loanInterestRate: intRate,
+      loanDurationYears: options?.loanDurationYears || 5,
+      gracePeriodMonths: options?.gracePeriodMonths || 0,
+      equityRatio: eqRatio,
+      loanRatio: Math.max(0, 1 - eqRatio),
       achatsMatieres, achatsEmballages, energieAtelier, carburant, maintenance, assurances, telecom, marketing, totalChargesExploit,
       masseSalariale,
       margeBrute, servicesExt, valeurAjoutee, ebe, rex, rao, impotIS, resultatNet, caf,
@@ -652,13 +735,13 @@ export class BusinessPlanService {
       sheet.getRange(`F${r + 1}`).format.horizontalAlignment = "Right";
     }
 
-    try {
-      sheet.getRange("B:B").format.columnWidth = 260;
-      sheet.getRange("C:C").format.columnWidth = 190;
-      sheet.getRange("D:D").format.columnWidth = 25; // Séparateur
-      sheet.getRange("E:E").format.columnWidth = 200;
-      sheet.getRange("F:F").format.columnWidth = 190;
-    } catch (_) {}
+    this.finalizeSheetFormatting(sheet, {
+      B: 260,
+      C: 190,
+      D: 25, // Séparateur
+      E: 200,
+      F: 190
+    });
   }
 
   // =========================================================================
@@ -694,10 +777,10 @@ export class BusinessPlanService {
       sheet.getRange(`B${r}:C${r}`).format.rowHeight = 22;
     }
 
-    try {
-      sheet.getRange("B:B").format.columnWidth = 240;
-      sheet.getRange("C:C").format.columnWidth = 420;
-    } catch (_) {}
+    this.finalizeSheetFormatting(sheet, {
+      B: 240,
+      C: 420
+    });
   }
 
   // =========================================================================
@@ -742,13 +825,13 @@ export class BusinessPlanService {
     }
     this.applyModernTableStyle(sheet, "B11:F11", "B12:F14", t.headerBg);
 
-    try {
-      sheet.getRange("B:B").format.columnWidth = 230;
-      sheet.getRange("C:C").format.columnWidth = 240;
-      sheet.getRange("D:D").format.columnWidth = 180;
-      sheet.getRange("E:E").format.columnWidth = 180;
-      sheet.getRange("F:F").format.columnWidth = 240;
-    } catch (_) {}
+    this.finalizeSheetFormatting(sheet, {
+      B: 230,
+      C: 240,
+      D: 180,
+      E: 180,
+      F: 240
+    });
   }
 
   // =========================================================================
@@ -778,13 +861,13 @@ export class BusinessPlanService {
     this.applyModernTableStyle(sheet, "B4:F4", "B5:F11", t.headerBg, { totalRow: "B12:F12" });
     this.setRangeNumberFormat(sheet, "F5:F12", `#,##0 "${p.currencySymbol}"`);
 
-    try {
-      sheet.getRange("B:B").format.columnWidth = 190;
-      sheet.getRange("C:C").format.columnWidth = 230;
-      sheet.getRange("D:D").format.columnWidth = 260;
-      sheet.getRange("E:E").format.columnWidth = 220;
-      sheet.getRange("F:F").format.columnWidth = 175;
-    } catch (_) {}
+    this.finalizeSheetFormatting(sheet, {
+      B: 190,
+      C: 230,
+      D: 260,
+      E: 220,
+      F: 175
+    });
   }
 
   // =========================================================================
@@ -810,13 +893,13 @@ export class BusinessPlanService {
     }
     this.applyModernTableStyle(sheet, "B4:F4", "B5:F10", t.headerBg);
 
-    try {
-      sheet.getRange("B:B").format.columnWidth = 130;
-      sheet.getRange("C:C").format.columnWidth = 320;
-      sheet.getRange("D:D").format.columnWidth = 190;
-      sheet.getRange("E:E").format.columnWidth = 150;
-      sheet.getRange("F:F").format.columnWidth = 260;
-    } catch (_) {}
+    this.finalizeSheetFormatting(sheet, {
+      B: 130,
+      C: 320,
+      D: 190,
+      E: 150,
+      F: 260
+    });
   }
 
   // =========================================================================
@@ -847,13 +930,15 @@ export class BusinessPlanService {
     this.applyModernTableStyle(sheet, "B4:H4", "B5:H7", t.headerBg, { totalRow: "B8:H8" });
     this.setRangeNumberFormat(sheet, "C5:H8", "#,##0");
 
-    try {
-      sheet.getRange("B:B").format.columnWidth = 280;
-      sheet.getRange("C:C").format.columnWidth = 120;
-      for (const col of ["D", "E", "F", "G", "H"]) {
-        sheet.getRange(`${col}:${col}`).format.columnWidth = 140;
-      }
-    } catch (_) {}
+    this.finalizeSheetFormatting(sheet, {
+      B: 280,
+      C: 120,
+      D: 140,
+      E: 140,
+      F: 140,
+      G: 140,
+      H: 140
+    });
   }
 
   // =========================================================================
@@ -884,13 +969,15 @@ export class BusinessPlanService {
     this.applyModernTableStyle(sheet, "B4:H4", "B5:H7", t.headerBg, { totalRow: "B8:H8" });
     this.setRangeNumberFormat(sheet, "C5:H8", `#,##0 "${p.currencySymbol}"`);
 
-    try {
-      sheet.getRange("B:B").format.columnWidth = 280;
-      sheet.getRange("C:C").format.columnWidth = 160;
-      for (const col of ["D", "E", "F", "G", "H"]) {
-        sheet.getRange(`${col}:${col}`).format.columnWidth = 175;
-      }
-    } catch (_) {}
+    this.finalizeSheetFormatting(sheet, {
+      B: 280,
+      C: 160,
+      D: 175,
+      E: 175,
+      F: 175,
+      G: 175,
+      H: 175
+    });
   }
 
   // =========================================================================
@@ -928,14 +1015,14 @@ export class BusinessPlanService {
     this.setRangeNumberFormat(sheet, `E5:E${lastR}`, "0.0%");
     this.setRangeNumberFormat(sheet, `F5:G${totR}`, `#,##0 "${p.currencySymbol}"`);
 
-    try {
-      sheet.getRange("B:B").format.columnWidth = 320;
-      sheet.getRange("C:C").format.columnWidth = 175;
-      sheet.getRange("D:D").format.columnWidth = 110;
-      sheet.getRange("E:E").format.columnWidth = 110;
-      sheet.getRange("F:F").format.columnWidth = 165;
-      sheet.getRange("G:G").format.columnWidth = 165;
-    } catch (_) {}
+    this.finalizeSheetFormatting(sheet, {
+      B: 320,
+      C: 175,
+      D: 110,
+      E: 110,
+      F: 165,
+      G: 165
+    });
   }
 
   // =========================================================================
@@ -977,13 +1064,13 @@ export class BusinessPlanService {
     this.applyModernTableStyle(sheet, "B4:F4", "B5:F12", t.headerBg, { totalRow: "B13:F13" });
     this.setRangeNumberFormat(sheet, "D5:F13", `#,##0 "${p.currencySymbol}"`);
 
-    try {
-      sheet.getRange("B:B").format.columnWidth = 310;
-      sheet.getRange("C:C").format.columnWidth = 140;
-      sheet.getRange("D:D").format.columnWidth = 175;
-      sheet.getRange("E:E").format.columnWidth = 175;
-      sheet.getRange("F:F").format.columnWidth = 175;
-    } catch (_) {}
+    this.finalizeSheetFormatting(sheet, {
+      B: 310,
+      C: 140,
+      D: 175,
+      E: 175,
+      F: 175
+    });
   }
 
   // =========================================================================
@@ -1024,14 +1111,14 @@ export class BusinessPlanService {
     this.setRangeNumberFormat(sheet, `C5:C${totR}`, "#,##0");
     this.setRangeNumberFormat(sheet, `D5:G${totR}`, `#,##0 "${p.currencySymbol}"`);
 
-    try {
-      sheet.getRange("B:B").format.columnWidth = 280;
-      sheet.getRange("C:C").format.columnWidth = 90;
-      sheet.getRange("D:D").format.columnWidth = 165;
-      sheet.getRange("E:E").format.columnWidth = 175;
-      sheet.getRange("F:F").format.columnWidth = 175;
-      sheet.getRange("G:G").format.columnWidth = 175;
-    } catch (_) {}
+    this.finalizeSheetFormatting(sheet, {
+      B: 280,
+      C: 90,
+      D: 165,
+      E: 175,
+      F: 175,
+      G: 175
+    });
   }
 
   // =========================================================================
@@ -1098,13 +1185,13 @@ export class BusinessPlanService {
     }
     this.applyModernTableStyle(sheet, "B11:F11", "B12:F14", t.headerBg);
 
-    try {
-      sheet.getRange("B:B").format.columnWidth = 290;
-      sheet.getRange("C:C").format.columnWidth = 175;
-      sheet.getRange("D:D").format.columnWidth = 30; // Séparateur discret
-      sheet.getRange("E:E").format.columnWidth = 290;
-      sheet.getRange("F:F").format.columnWidth = 175;
-    } catch (_) {}
+    this.finalizeSheetFormatting(sheet, {
+      B: 290,
+      C: 175,
+      D: 30, // Séparateur discret
+      E: 290,
+      F: 175
+    });
   }
 
   // =========================================================================
@@ -1112,31 +1199,50 @@ export class BusinessPlanService {
   // =========================================================================
   private static async buildRemboursementEmprunt(sheet: Excel.Worksheet, context: Excel.RequestContext, p: any) {
     const t: BpTheme = p.theme;
-    this.createBanner(sheet, "B2:G2", "TABLEAU D'AMORTISSEMENT DE L'EMPRUNT (Taux 8% l'an)", t.bannerBg);
-
-    sheet.getRange("B4:G4").values = [["Période", "Capital Début Période", "Intérêts Annuels (8%)", "Amortissement Capital", "Annuité Totale", "Capital Restant Dû Fin"]];
-
     const emp = p.model?.emprunt || 20000000;
-    const amort = Math.round(emp / 4);
+    const rate = p.model?.loanInterestRate || 0.105;
+    const ratePct = Math.round(rate * 1000) / 10;
+    const graceMonths = p.model?.gracePeriodMonths || 0;
+    const loanYears = p.model?.loanDurationYears || 5;
 
-    sheet.getRange("B5:G5").values = [["Année 1", emp, "=C5*0.08", amort, "=D5+E5", "=C5-E5"]];
-    sheet.getRange("B6:G6").values = [["Année 2", "=G5", "=C6*0.08", amort, "=D6+E6", "=C6-E6"]];
-    sheet.getRange("B7:G7").values = [["Année 3", "=G6", "=C7*0.08", amort, "=D7+E7", "=C7-E7"]];
-    sheet.getRange("B8:G8").values = [["Année 4", "=G7", "=C8*0.08", "=C8", "=D8+E8", "=C8-E8"]];
+    this.createBanner(sheet, "B2:G2", `TABLEAU D'AMORTISSEMENT DE L'EMPRUNT (Taux ${ratePct}% l'an - Durée ${loanYears} ans${graceMonths > 0 ? ` - Différé ${graceMonths} mois` : ''})`, t.bannerBg);
 
-    sheet.getRange("B9:G9").values = [["TOTAL DU SERVICE DE LA DETTE", "", "=SUM(D5:D8)", "=SUM(E5:E8)", "=SUM(F5:F8)", "0"]];
+    sheet.getRange("B4:G4").values = [["Période", "Capital Début Période", `Intérêts Annuels (${ratePct}%)`, "Amortissement Capital", "Annuité Totale", "Capital Restant Dû Fin"]];
 
-    this.setRangeNumberFormat(sheet, "C5:G9", `#,##0 "${p.currencySymbol}"`);
-    this.applyModernTableStyle(sheet, "B4:G4", "B5:G8", t.headerBg, { totalRow: "B9:G9" });
+    let amort1: number;
+    let amortNext: number;
+    if (graceMonths >= 12) {
+      amort1 = 0;
+      amortNext = Math.round(emp / Math.max(loanYears - 1, 1));
+    } else if (graceMonths > 0) {
+      const fractionActive = (12 - graceMonths) / 12;
+      const amortNormal = emp / Math.max(loanYears - (graceMonths / 12) * 0.5, 1);
+      amort1 = Math.round(amortNormal * fractionActive);
+      amortNext = Math.round((emp - amort1) / Math.max(loanYears - 1, 1));
+    } else {
+      amort1 = Math.round(emp / loanYears);
+      amortNext = amort1;
+    }
 
-    try {
-      sheet.getRange("B:B").format.columnWidth = 120;
-      sheet.getRange("C:C").format.columnWidth = 175;
-      sheet.getRange("D:D").format.columnWidth = 160;
-      sheet.getRange("E:E").format.columnWidth = 175;
-      sheet.getRange("F:F").format.columnWidth = 175;
-      sheet.getRange("G:G").format.columnWidth = 175;
-    } catch (_) {}
+    sheet.getRange("B5:G5").values = [["Année 1" + (graceMonths > 0 ? ` (Différé ${graceMonths}m)` : ''), emp, `=C5*${rate}`, amort1, "=D5+E5", "=C5-E5"]];
+    sheet.getRange("B6:G6").values = [["Année 2", "=G5", `=C6*${rate}`, amortNext, "=D6+E6", "=C6-E6"]];
+    sheet.getRange("B7:G7").values = [["Année 3", "=G6", `=C7*${rate}`, amortNext, "=D7+E7", "=C7-E7"]];
+    sheet.getRange("B8:G8").values = [["Année 4", "=G7", `=C8*${rate}`, amortNext, "=D8+E8", "=C8-E8"]];
+    sheet.getRange("B9:G9").values = [["Année 5", "=G8", `=C9*${rate}`, "=C9", "=D9+E9", "=C9-E9"]];
+
+    sheet.getRange("B10:G10").values = [["TOTAL DU SERVICE DE LA DETTE", "", "=SUM(D5:D9)", "=SUM(E5:E9)", "=SUM(F5:F9)", "0"]];
+
+    this.setRangeNumberFormat(sheet, "C5:G10", `#,##0 "${p.currencySymbol}"`);
+    this.applyModernTableStyle(sheet, "B4:G4", "B5:G9", t.headerBg, { totalRow: "B10:G10" });
+
+    this.finalizeSheetFormatting(sheet, {
+      B: 160,
+      C: 185,
+      D: 175,
+      E: 185,
+      F: 185,
+      G: 185
+    });
   }
 
   // =========================================================================
@@ -1162,13 +1268,15 @@ export class BusinessPlanService {
     this.setRangeNumberFormat(sheet, "D5:H8", `#,##0 "${p.currencySymbol}"`);
     this.applyModernTableStyle(sheet, "B4:H4", "B5:H7", t.headerBg, { totalRow: "B8:H8" });
 
-    try {
-      sheet.getRange("B:B").format.columnWidth = 280;
-      sheet.getRange("C:C").format.columnWidth = 180;
-      for (const col of ["D", "E", "F", "G", "H"]) {
-        sheet.getRange(`${col}:${col}`).format.columnWidth = 175;
-      }
-    } catch (_) {}
+    this.finalizeSheetFormatting(sheet, {
+      B: 280,
+      C: 180,
+      D: 175,
+      E: 175,
+      F: 175,
+      G: 175,
+      H: 175
+    });
   }
 
   // =========================================================================
@@ -1277,13 +1385,15 @@ export class BusinessPlanService {
     this.applyModernTableStyle(sheet, "B21:H21", "B22:H26", t.headerBg);
     this.setRangeNumberFormat(sheet, "D22:H26", "0.0%");
 
-    try {
-      sheet.getRange("B:B").format.columnWidth = 310;
-      sheet.getRange("C:C").format.columnWidth = 90;
-      for (const col of ["D", "E", "F", "G", "H"]) {
-        sheet.getRange(`${col}:${col}`).format.columnWidth = 175;
-      }
-    } catch (_) {}
+    this.finalizeSheetFormatting(sheet, {
+      B: 310,
+      C: 90,
+      D: 175,
+      E: 175,
+      F: 175,
+      G: 175,
+      H: 175
+    });
   }
 
   // =========================================================================
@@ -1358,13 +1468,13 @@ export class BusinessPlanService {
     this.applyModernTableStyle(sheet, "B12:F12", "B13:F15", t.headerBg);
     this.setRangeNumberFormat(sheet, "D13:D15", `#,##0 "${p.currencySymbol}"`);
 
-    try {
-      sheet.getRange("B:B").format.columnWidth = 280;
-      sheet.getRange("C:C").format.columnWidth = 175;
-      sheet.getRange("D:D").format.columnWidth = 30; // Séparateur
-      sheet.getRange("E:E").format.columnWidth = 280;
-      sheet.getRange("F:F").format.columnWidth = 175;
-    } catch (_) {}
+    this.finalizeSheetFormatting(sheet, {
+      B: 280,
+      C: 175,
+      D: 30, // Séparateur
+      E: 280,
+      F: 175
+    });
   }
 
   // =========================================================================
@@ -1404,13 +1514,9 @@ export class BusinessPlanService {
     sheet.getRange("B8:N8").format.font.color = "#065F46";
     sheet.getRange("B8:N8").format.font.bold = true;
 
-    try {
-      sheet.getRange("B:B").format.columnWidth = 270;
-      const cols = ["C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N"];
-      for (const c of cols) {
-        sheet.getRange(`${c}:${c}`).format.columnWidth = 145;
-      }
-    } catch (_) {}
+    const tresoCols: { [col: string]: number } = { B: 270 };
+    ["C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N"].forEach(c => { tresoCols[c] = 145; });
+    this.finalizeSheetFormatting(sheet, tresoCols);
   }
 
   // =========================================================================
@@ -1457,12 +1563,7 @@ export class BusinessPlanService {
     this.setRangeNumberFormat(sheet, "D12", `#,##0 "${p.currencySymbol}"`);
     this.setRangeNumberFormat(sheet, "D13", "0.0%");
 
-    try {
-      sheet.getRange("B:B").format.columnWidth = 280;
-      sheet.getRange("C:C").format.columnWidth = 260;
-      sheet.getRange("D:D").format.columnWidth = 180;
-      sheet.getRange("E:E").format.columnWidth = 280;
-    } catch (_) {}
+    this.finalizeSheetFormatting(sheet, { B: 280, C: 260, D: 180, E: 280 });
   }
 
   // =========================================================================
@@ -1497,15 +1598,7 @@ export class BusinessPlanService {
     this.applyModernTableStyle(sheet, "B4:H4", "B5:H10", t.headerBg);
     this.setRangeNumberFormat(sheet, "D5:G10", `#,##0 "${p.currencySymbol}"`);
 
-    try {
-      sheet.getRange("B:B").format.columnWidth = 240;
-      sheet.getRange("C:C").format.columnWidth = 260;
-      sheet.getRange("D:D").format.columnWidth = 175;
-      sheet.getRange("E:E").format.columnWidth = 175;
-      sheet.getRange("F:F").format.columnWidth = 175;
-      sheet.getRange("G:G").format.columnWidth = 175;
-      sheet.getRange("H:H").format.columnWidth = 220;
-    } catch (_) {}
+    this.finalizeSheetFormatting(sheet, { B: 240, C: 260, D: 175, E: 175, F: 175, G: 175, H: 220 });
   }
 
   // =========================================================================
@@ -1545,12 +1638,7 @@ export class BusinessPlanService {
 
     this.applyModernTableStyle(sheet, "B4:E4", "B5:E11", t.headerBg);
 
-    try {
-      sheet.getRange("B:B").format.columnWidth = 280;
-      sheet.getRange("C:C").format.columnWidth = 180;
-      sheet.getRange("D:D").format.columnWidth = 230;
-      sheet.getRange("E:E").format.columnWidth = 240;
-    } catch (_) {}
+    this.finalizeSheetFormatting(sheet, { B: 280, C: 180, D: 230, E: 240 });
   }
 
   // =========================================================================
@@ -1623,13 +1711,7 @@ export class BusinessPlanService {
     sheet.getRange("B17:F18").format.horizontalAlignment = "Center";
     sheet.getRange("B17:F18").format.verticalAlignment = "Center";
 
-    try {
-      sheet.getRange("B:B").format.columnWidth = 190;
-      sheet.getRange("C:C").format.columnWidth = 190;
-      sheet.getRange("D:D").format.columnWidth = 35; // Séparateur
-      sheet.getRange("E:E").format.columnWidth = 190;
-      sheet.getRange("F:F").format.columnWidth = 190;
-    } catch (_) {}
+    this.finalizeSheetFormatting(sheet, { B: 190, C: 190, D: 35, E: 190, F: 190 });
   }
 
   // =========================================================================
@@ -1776,6 +1858,34 @@ export class BusinessPlanService {
   private static setBorder(range: Excel.Range, edge: "EdgeBottom" | "EdgeTop" | "EdgeLeft" | "EdgeRight", style: string = "Continuous") {
     try {
       range.format.borders.getItem(edge).style = style as any;
+    } catch (_) {}
+  }
+
+  /**
+   * Définit de manière universelle la largeur des colonnes dans toutes les versions d'Excel (2016 à 365)
+   * Évite les erreurs InvalidArgument de 'B:B' et garantit zéro '########'
+   */
+  private static safeSetColumnWidths(sheet: Excel.Worksheet, widths: { [col: string]: number }) {
+    for (const [col, width] of Object.entries(widths)) {
+      try {
+        sheet.getRange(`${col}1:${col}2`).format.columnWidth = width;
+      } catch (_) {
+        try {
+          sheet.getRange(`${col}1`).getEntireColumn().format.columnWidth = width;
+        } catch (_) {}
+      }
+    }
+  }
+
+  /**
+   * Applique les largeurs recommandées et autofit sur la feuille
+   */
+  private static finalizeSheetFormatting(sheet: Excel.Worksheet, defaultWidths?: { [col: string]: number }) {
+    if (defaultWidths) {
+      this.safeSetColumnWidths(sheet, defaultWidths);
+    }
+    try {
+      sheet.getUsedRange().format.autofitColumns();
     } catch (_) {}
   }
 }

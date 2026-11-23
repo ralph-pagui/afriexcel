@@ -471,33 +471,106 @@ ${userPrompt}`;
 
       // Extraction dynamique du produit / secteur (ex: "sur la fabrication de savon bio" ou "pour ma chocolaterie")
       let productTopic = "";
-      const topicMatch = prompt.match(/(?:sur\s+(?:la\s+)?(?:fabrication|production|création|confection|vente|culture|élevage|transformation)?\s*(?:de\s+|d'|d’)?|concernant\s+|pour\s+(?:un\s+|une\s+|ma\s+|mon\s+|notre\s+)?(?:projet\s+de\s+)?)([^.,;!?\n]+)/i);
 
-      if (topicMatch && topicMatch[1]) {
-        productTopic = topicMatch[1].trim();
-        // Éliminer les possessifs ou articles résiduels
-        productTopic = productTopic.replace(/^(?:ma|mon|notre|un|une|le|la|les|l'|d')\s+/i, '').trim();
-      }
-
-      if (lower.includes('chocolat') || lower.includes('cacao') || lower.includes('confiserie')) {
+      // 1. Détection prioritaire par mot-clé explicite
+      if (lower.includes('manioc') || lower.includes('cassava') || lower.includes('amidon') || lower.includes('farine panifiable') || (lower.includes('tubercule') && lower.includes('transformation'))) {
+        productTopic = "transformation du manioc en farine panifiable et amidon";
+      } else if (lower.includes('chocolat') || lower.includes('cacao') || lower.includes('confiserie')) {
         productTopic = "chocolaterie artisanale et transformation du cacao";
-      } else if (!productTopic) {
-        if (lower.includes('savon') || lower.includes('karité')) productTopic = "fabrication de savon";
-        else if (lower.includes('poulet') || lower.includes('volaille') || lower.includes('avicole')) productTopic = "élevage avicole de poulets";
-        else if (lower.includes('pain') || lower.includes('boulangerie')) productTopic = "boulangerie artisanale";
-        else if (lower.includes('poisson') || lower.includes('pisciculture')) productTopic = "pisciculture et élevage de poissons";
-        else if (lower.includes('textile') || lower.includes('couture') || lower.includes('vêtement')) productTopic = "confection textile et couture";
-        else if (lower.includes('détergent') || lower.includes('javel')) productTopic = "fabrication de détergents";
-        else if (lower.includes('jus') || lower.includes('ananas')) productTopic = "transformation de jus de fruits";
+      } else if (lower.includes('formation') || lower.includes('académie') || lower.includes('academy') || lower.includes('skills') || lower.includes('centre de formation') || lower.includes('école') || lower.includes('ecole')) {
+        productTopic = "formation professionnelle et compétences numériques";
+      } else if (lower.includes('savon') || lower.includes('karité') || lower.includes('cosmétique')) {
+        productTopic = "fabrication de savon";
+      } else if (lower.includes('poulet') || lower.includes('volaille') || lower.includes('avicole')) {
+        productTopic = "élevage avicole de poulets";
+      } else if (lower.includes('solaire') || lower.includes('photovolta') || lower.includes('onduleur')) {
+        productTopic = "solutions solaires photovoltaïques";
+      } else if (lower.includes('pain') || lower.includes('boulangerie')) {
+        productTopic = "boulangerie artisanale";
+      } else if (lower.includes('poisson') || lower.includes('pisciculture')) {
+        productTopic = "pisciculture et élevage de poissons";
+      } else if (lower.includes('textile') || lower.includes('couture') || lower.includes('vêtement')) {
+        productTopic = "confection textile et couture";
+      } else if (lower.includes('détergent') || lower.includes('javel')) {
+        productTopic = "fabrication de détergents";
+      } else if (lower.includes('jus') || lower.includes('mangue') || lower.includes('ananas')) {
+        productTopic = "transformation de jus de fruits";
+      } else if (lower.includes('transport') || lower.includes('camion') || lower.includes('fret')) {
+        productTopic = "transport routier de marchandises";
       }
 
-      const cleanTopic = productTopic
-        ? productTopic.charAt(0).toUpperCase() + productTopic.slice(1)
-        : "Transformation & Production";
+      // 2. Extraction regex si aucun mot-clé spécifique
+      if (!productTopic) {
+        const topicMatch = prompt.match(/(?:sur\s+(?:la\s+)?(?:fabrication|production|création|confection|vente|culture|élevage|transformation)?\s*(?:de\s+|d'|d’)?|concernant\s+|pour\s+(?:un\s+|une\s+|ma\s+|mon\s+|notre\s+)?(?:projet\s+de\s+)?)([^.,;!?\n]+)/i);
+        if (topicMatch && topicMatch[1]) {
+          productTopic = topicMatch[1].trim();
+          productTopic = productTopic.replace(/^(?:ma|mon|notre|un|une|le|la|les|l'|d')\s+/i, '').trim();
+          if (productTopic.toLowerCase().includes('projet suivant')) {
+            productTopic = "";
+          }
+        }
+      }
 
-      const projectName = cleanTopic.toLowerCase().startsWith('projet') 
-        ? cleanTopic 
-        : `Projet - ${cleanTopic}`;
+      // Extraction propre du nom de l'entreprise ou du projet (sans markdown ni préfixes parasites)
+      let projectName = "";
+      const nameMatch = prompt.match(/(?:nom\s+(?:du\s+projet|de\s+l['’]entreprise)|raison\s+sociale|\*\*projet\s*:\s*|projet\s*:)\s*([^\r\n*]+)/i);
+      if (nameMatch && nameMatch[1]) {
+        let cand = nameMatch[1].replace(/[*_#`]/g, '').trim();
+        cand = cand.replace(/^(?:le\s+projet\s+suivant\s*:?\s*)/i, '').trim();
+        if (cand.length >= 4 && cand.length <= 80 && !cand.toLowerCase().startsWith('génère')) {
+          projectName = cand;
+        }
+      }
+
+      if (!projectName) {
+        const cleanTopic = productTopic
+          ? productTopic.charAt(0).toUpperCase() + productTopic.slice(1)
+          : "Transformation & Production";
+        projectName = cleanTopic.toLowerCase().startsWith('projet') 
+          ? cleanTopic 
+          : `Projet - ${cleanTopic}`;
+      }
+
+      // Extraction précise des paramètres de financement
+      let parsedEquityRatio = 0.40;
+      let parsedLoanRatio = 0.60;
+      const eqMatch = prompt.match(/(?:apport\s+(?:personnel|promoteur|fonds\s+propres?)|fonds\s+propres?)\s*[:=-]?\s*(\d+(?:[.,]\d+)?)\s*%/i) || prompt.match(/(\d+(?:[.,]\d+)?)\s*%\s*(?:d['’]apport|apport\s+personnel)/i);
+      if (eqMatch) {
+        const val = parseFloat(eqMatch[1].replace(',', '.'));
+        parsedEquityRatio = val > 1 ? val / 100 : val;
+        parsedLoanRatio = Math.max(0, 1 - parsedEquityRatio);
+      }
+      const loanMatch = prompt.match(/(?:emprunt\s+(?:bancaire)?|crédit\s+(?:bancaire)?|financement\s+bancaire)\s*[:=-]?\s*(\d+(?:[.,]\d+)?)\s*%/i) || prompt.match(/(\d+(?:[.,]\d+)?)\s*%\s*(?:d['’]emprunt|emprunt\s+bancaire)/i);
+      if (loanMatch) {
+        const val = parseFloat(loanMatch[1].replace(',', '.'));
+        parsedLoanRatio = val > 1 ? val / 100 : val;
+        if (!eqMatch) parsedEquityRatio = Math.max(0, 1 - parsedLoanRatio);
+      }
+
+      let parsedInterestRate = 0.105;
+      const intMatch = prompt.match(/(?:taux\s+(?:d['’]intérêt)?\s*(?:annuel)?\s*[:=-]?\s*|au\s+taux\s+de\s*)(\d+(?:[.,]\d+)?)\s*%/i);
+      if (intMatch) {
+        const val = parseFloat(intMatch[1].replace(',', '.'));
+        parsedInterestRate = val > 1 ? val / 100 : val;
+      }
+
+      let parsedLoanDuration = 5;
+      const durMatch = prompt.match(/(?:remboursement|durée\s+(?:du\s+crédit|de\s+l['’]emprunt|du\s+prêt)?)\s*[:=-]?\s*(\d+)\s*ans?\b/i);
+      if (durMatch) {
+        parsedLoanDuration = parseInt(durMatch[1], 10);
+      }
+
+      let parsedGracePeriod = 0;
+      const graceMatch = prompt.match(/différé(?:\s+de\s+remboursement(?:\s+du\s+capital)?)?\s*[:=-]?\s*(\d+)\s*mois/i);
+      if (graceMatch) {
+        parsedGracePeriod = parseInt(graceMatch[1], 10);
+      }
+
+      let parsedBudget: number | undefined = undefined;
+      const budgetMatch = prompt.match(/(\d+(?:[.,]\d+)?)\s*millions?\s*(?:de\s*)?(?:fcfa|f\s*cfa|xaf|xof)?/i);
+      if (budgetMatch) {
+        parsedBudget = parseFloat(budgetMatch[1].replace(',', '.')) * 1000000;
+      }
 
       const allSheetNames = [
         "Page de garde (Tableau synthétique & Investissements)",
@@ -533,8 +606,15 @@ ${userPrompt}`;
             productTopic: productTopic || "Transformation & Production",
             sheetCount: sheetCount,
             projectType: 'Création',
-            currencySymbol: countryInfo.currencySymbol
-          }
+            currencySymbol: countryInfo.currencySymbol,
+            equityRatio: parsedEquityRatio,
+            loanRatio: parsedLoanRatio,
+            loanInterestRate: parsedInterestRate,
+            loanDurationYears: parsedLoanDuration,
+            gracePeriodMonths: parsedGracePeriod,
+            totalBudget: parsedBudget,
+            rawPrompt: prompt
+          } as any
         ],
         suggestedFollowUp: `Souhaitez-vous personnaliser le montant de l'emprunt ou les prix de vente unitaires pour ${projectName} ?`
       };

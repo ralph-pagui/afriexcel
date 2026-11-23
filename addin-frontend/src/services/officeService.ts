@@ -146,14 +146,21 @@ export class OfficeService {
           }
 
           // 3. Fallback client-side complet et autonome
+          const actAny = action as any;
           const bpRes = await BusinessPlanService.generateCompletePlan({
             projectName: action.projectName,
             projectType: action.projectType,
             productTopic: action.productTopic,
             sheetCount: action.sheetCount,
             currencySymbol: action.currencySymbol,
-            template_id: (action as any).template_id,
+            template_id: actAny.template_id,
             sheetsToGenerate: action.sheetsToGenerate,
+            equityRatio: actAny.equityRatio,
+            loanRatio: actAny.loanRatio,
+            loanInterestRate: actAny.loanInterestRate,
+            loanDurationYears: actAny.loanDurationYears,
+            gracePeriodMonths: actAny.gracePeriodMonths,
+            totalBudget: actAny.totalBudget,
             onProgress: (name, current, total) => {
               onProgress?.(`Feuille ${current}/${total} : ${name}...`);
             }
