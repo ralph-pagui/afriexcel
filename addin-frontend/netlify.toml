@@ -17,3 +17,6 @@
     Access-Control-Allow-Methods = "GET, POST, OPTIONS, PUT, DELETE"
     Access-Control-Allow-Headers = "Content-Type, Authorization, X-Requested-With"
     Content-Security-Policy = "frame-ancestors 'self' https://*.office.com https://*.officeapps.live.com https://*.microsoft.com https://*.sharepoint.com https://*.office365.com;"
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Pragma = "no-cache"
+    Expires = "0"
