@@ -5,7 +5,7 @@
   xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
   xsi:type="TaskPaneApp">
   <Id>b29d4c78-5e4a-4b91-912a-8457fce2a912</Id>
-  <Version>2.0.0.0</Version>
+  <Version>2.1.0.0</Version>
   <ProviderName>AfriExcel Technologies</ProviderName>
   <DefaultLocale>fr-FR</DefaultLocale>
   <DisplayName DefaultValue="AfriExcel Copilot - Business Plan OHADA"/>
@@ -22,7 +22,7 @@
     <Host Name="Workbook"/>
   </Hosts>
   <DefaultSettings>
-    <SourceLocation DefaultValue="https://afriexcelai.netlify.app/?mode=addin"/>
+    <SourceLocation DefaultValue="https://afriexcelai.netlify.app/?v=2.1.0&amp;mode=addin"/>
   </DefaultSettings>
   <Permissions>ReadWriteDocument</Permissions>
 
@@ -73,7 +73,7 @@
         <bt:Image id="Icon.80" DefaultValue="https://afriexcelai.netlify.app/assets/icon-80.png"/>
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://afriexcelai.netlify.app/?mode=addin"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://afriexcelai.netlify.app/?v=2.1.0&amp;mode=addin"/>
         <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://afriexcelai.netlify.app/"/>
       </bt:Urls>
       <bt:ShortStrings>
