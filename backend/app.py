@@ -202,7 +202,7 @@ def generate_business_plan(req: PlanRequest):
         fin_data["theme"] = selected_theme
 
         # 6. Génération du classeur Excel natif avec openpyxl (20 feuilles 100% dynamiques et équilibrées)
-        excel_bytes = ExcelReportGenerator.build(fin_data, project_name=project_name, country=country, template_id=selected_theme.id)
+        excel_bytes, sheets_payload = ExcelReportGenerator.build_with_payload(fin_data, project_name=project_name, country=country, template_id=selected_theme.id)
         b64_file = base64.b64encode(excel_bytes).decode("utf-8")
 
         # 7. Synthèse exécutive professionnelle
@@ -241,6 +241,7 @@ def generate_business_plan(req: PlanRequest):
             sheets_count=20,
             filename=filename,
             file_base64=b64_file,
+            sheets_payload=sheets_payload,
             template_id=selected_theme.id,
             template_name=selected_theme.name
         )

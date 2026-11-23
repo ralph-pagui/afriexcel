@@ -102,15 +102,17 @@ export class OfficeService {
         case 'UPDATE_BUSINESS_PLAN':
         case 'CREATE_BUSINESS_PLAN': {
           const isModif = action.type === 'UPDATE_BUSINESS_PLAN';
-          // 1. Si un fichier Base64 a déjà été fourni par le moteur Python
-          if ((action as any).file_base64) {
-            onProgress?.(isModif ? "Mise à jour chirurgicale et harmonisation des 20 feuilles via Python..." : "Insertion des 20 feuilles natives via le moteur Python...");
-            const inserted = await PythonBackendService.insertWorksheetsIntoActiveWorkbook((action as any).file_base64, isModif);
+          const actAny = action as any;
+
+          // 1. Si un fichier Base64 ou des feuilles pré-calculées ont déjà été fournis par le moteur Python
+          if (actAny.file_base64 || actAny.sheets_payload) {
+            onProgress?.(isModif ? "Mise à jour et harmonisation des 20 feuilles via Python..." : "Insertion des 20 feuilles natives via le moteur Python...");
+            const inserted = await PythonBackendService.insertWorksheetsIntoActiveWorkbook(actAny.file_base64, isModif, actAny.sheets_payload);
             if (inserted) {
               return {
                 success: true,
                 message: isModif
-                  ? "Toutes les 20 feuilles du Business Plan ont été mises à jour chirurgicalement et harmonisées dans votre classeur !"
+                  ? "Toutes les 20 feuilles du Business Plan ont été mises à jour et harmonisées dans votre classeur !"
                   : "Les 20 feuilles professionnelles générées par le moteur Python ont été insérées directement dans votre classeur !"
               };
             }
@@ -119,20 +121,25 @@ export class OfficeService {
           // 2. Appel direct et prioritaire au moteur Python OHADA (20 feuilles bancables)
           onProgress?.(isModif ? "Recalcul financier complet via le moteur Python OHADA (20 feuilles)..." : "Calcul financier et modélisation via le moteur Python OHADA (20 feuilles)...");
           const pyPlan = await PythonBackendService.generateBusinessPlan({
-            prompt: (action as any).rawPrompt || action.projectName || action.productTopic || "business plan",
-            country: (action as any).country,
+            prompt: actAny.rawPrompt || action.projectName || action.productTopic || "business plan",
+            country: actAny.country,
             currency: action.currencySymbol || "FCFA",
-            isModification: isModif
+            isModification: isModif,
+            equityRatio: actAny.equityRatio,
+            loanRatio: actAny.loanRatio,
+            loanInterestRate: actAny.loanInterestRate,
+            loanDurationYears: actAny.loanDurationYears,
+            totalBudget: actAny.totalBudget
           });
 
-          if (pyPlan && pyPlan.file_base64) {
+          if (pyPlan && (pyPlan.file_base64 || pyPlan.sheets_payload)) {
             onProgress?.("Harmonisation des 20 feuilles natives Excel...");
-            const inserted = await PythonBackendService.insertWorksheetsIntoActiveWorkbook(pyPlan.file_base64, isModif);
+            const inserted = await PythonBackendService.insertWorksheetsIntoActiveWorkbook(pyPlan.file_base64, isModif, pyPlan.sheets_payload);
             if (inserted) {
               return {
                 success: true,
                 message: isModif
-                  ? `Les 20 feuilles du Business Plan pour '${pyPlan.project_name}' ont été recalculées et mises à jour chirurgicalement avec succès !`
+                  ? `Les 20 feuilles du Business Plan pour '${pyPlan.project_name}' ont été recalculées et mises à jour avec succès !`
                   : `Les 20 feuilles professionnelles pour '${pyPlan.project_name}' ont été générées et insérées dans votre classeur avec succès !`
               };
             } else {
@@ -146,7 +153,6 @@ export class OfficeService {
           }
 
           // 3. Fallback client-side complet et autonome
-          const actAny = action as any;
           const bpRes = await BusinessPlanService.generateCompletePlan({
             projectName: action.projectName,
             projectType: action.projectType,

@@ -30,6 +30,7 @@ export interface PythonPlanResponse {
   sheets_count: number;
   filename: string;
   file_base64: string;
+  sheets_payload?: any[];
   template_id?: string;
   template_name?: string;
 }
@@ -156,80 +157,181 @@ export class PythonBackendService {
   /**
    * Insère ou remplace chirurgicalement les 20 feuilles du Business Plan dans le classeur Excel actif via Office.js
    */
-  static async insertWorksheetsIntoActiveWorkbook(base64Data: string, isModification: boolean = false): Promise<boolean> {
+  static async insertWorksheetsIntoActiveWorkbook(
+    base64Data: string, 
+    isModification: boolean = false,
+    sheetsPayload?: any[]
+  ): Promise<boolean> {
     try {
-      return await Excel.run(async (context) => {
+      const base64Success = await Excel.run(async (context) => {
         const workbook = context.workbook as any;
-        if (typeof workbook.insertWorksheetsFromBase64 === "function") {
-          const worksheets = context.workbook.worksheets;
-          worksheets.load("items/name");
-          await context.sync();
-
-          // 1. Détection des anciennes feuilles de business plan (commençant par 01_, 02_... ou noms clés)
-          const oldBpSheets = worksheets.items.filter(s =>
-            /^\d{2}_/.test(s.name) ||
-            s.name.includes("Page_de_Garde") ||
-            s.name.includes("Tableau_de_Bord") ||
-            s.name.includes("Plan_Financement")
-          );
-
-          let tempSheet: any = null;
-          // Si des feuilles de BP existent déjà, on les supprime proprement pour éviter les doublons ("01_Page_de_Garde 1")
-          if (oldBpSheets.length > 0) {
-            // Excel impose qu'au moins une feuille reste visible en permanence dans le classeur
-            if (oldBpSheets.length >= worksheets.items.length) {
-              tempSheet = worksheets.add("AfriExcel_Sync");
-              await context.sync();
-            }
-
-            for (const s of oldBpSheets) {
-              s.delete();
-            }
-            await context.sync();
-          }
-
-          // 2. Insertion chirurgicale des 20 nouvelles feuilles natives calculées et cohérentes
-          workbook.insertWorksheetsFromBase64(base64Data, {
-            positionType: Excel.WorksheetPositionType.end
-          });
-          await context.sync();
-
-          // 3. Suppression de la feuille tampon si créée
-          if (tempSheet) {
-            try {
-              tempSheet.delete();
-              await context.sync();
-            } catch (_) {}
-          }
-
-          // 4. Nettoyage de la feuille vide par défaut 'Sheet1' ou 'Feuil1' si elle n'est plus utile
-          try {
-            worksheets.load("items/name");
-            await context.sync();
-            const emptyDefault = worksheets.items.find(s =>
-              (s.name === "Sheet1" || s.name === "Feuil1") && worksheets.items.length > 1
-            );
-            if (emptyDefault) {
-              emptyDefault.delete();
-              await context.sync();
-            }
-          } catch (_) {}
-
-          // 5. Activation immédiate de la Page de Garde pour l'utilisateur
-          try {
-            const firstSheet = context.workbook.worksheets.getItem("01_Page_de_Garde");
-            firstSheet.activate();
-            await context.sync();
-          } catch (_) {}
-
-          return true;
-        } else {
-          console.warn("insertWorksheetsFromBase64 n'est pas supporté par cette version d'Excel.");
+        if (typeof workbook.insertWorksheetsFromBase64 !== "function") {
           return false;
         }
+
+        const worksheets = context.workbook.worksheets;
+        worksheets.load("items/name");
+        await context.sync();
+
+        // 1. Détection des anciennes feuilles de business plan (commençant par 01_, 02_... ou noms clés)
+        const oldBpSheets = worksheets.items.filter(s =>
+          /^\d{2}_/.test(s.name) ||
+          s.name.includes("Page_de_Garde") ||
+          s.name.includes("Tableau_de_Bord") ||
+          s.name.includes("Plan_Financement")
+        );
+
+        let tempSheet: any = null;
+        if (oldBpSheets.length > 0) {
+          if (oldBpSheets.length >= worksheets.items.length) {
+            tempSheet = worksheets.add("AfriExcel_Sync");
+            await context.sync();
+          }
+
+          for (const s of oldBpSheets) {
+            s.delete();
+          }
+          await context.sync();
+        }
+
+        // 2. Insertion chirurgicale des 20 nouvelles feuilles natives calculées et cohérentes
+        workbook.insertWorksheetsFromBase64(base64Data, {
+          positionType: Excel.WorksheetPositionType.end
+        });
+        await context.sync();
+
+        // 3. Suppression de la feuille tampon si créée
+        if (tempSheet) {
+          try {
+            tempSheet.delete();
+            await context.sync();
+          } catch (_) {}
+        }
+
+        // 4. Nettoyage de la feuille vide par défaut 'Sheet1' ou 'Feuil1' si elle n'est plus utile
+        try {
+          worksheets.load("items/name");
+          await context.sync();
+          const emptyDefault = worksheets.items.find(s =>
+            (s.name === "Sheet1" || s.name === "Feuil1") && worksheets.items.length > 1
+          );
+          if (emptyDefault) {
+            emptyDefault.delete();
+            await context.sync();
+          }
+        } catch (_) {}
+
+        // 5. Activation immédiate de la Page de Garde pour l'utilisateur
+        try {
+          const firstSheet = context.workbook.worksheets.getItem("01_Page_de_Garde");
+          firstSheet.activate();
+          await context.sync();
+        } catch (_) {}
+
+        return true;
+      });
+
+      if (base64Success) return true;
+    } catch (base64Err) {
+      console.warn("insertWorksheetsFromBase64 non supporté ou rejeté, basculement vers injection universelle :", base64Err);
+    }
+
+    // Fallback Universel 100% compatible Desktop/Web/Mac via sheetsPayload de Python
+    if (sheetsPayload && Array.isArray(sheetsPayload) && sheetsPayload.length > 0) {
+      console.log(`[Universal Injector] Injection de ${sheetsPayload.length} feuilles natives depuis le moteur Python...`);
+      return await this.insertWorksheetsFromPayload(sheetsPayload);
+    }
+
+    return false;
+  }
+
+  /**
+   * Injection universelle garantie feuille par feuille (compatible 100% versions Excel 2016/2019/365/Web/Mac)
+   */
+  static async insertWorksheetsFromPayload(sheetsPayload: any[]): Promise<boolean> {
+    try {
+      return await Excel.run(async (context) => {
+        const worksheets = context.workbook.worksheets;
+        worksheets.load("items/name");
+        await context.sync();
+
+        const oldBpSheets = worksheets.items.filter(s =>
+          /^\d{2}_/.test(s.name) ||
+          s.name.includes("Page_de_Garde") ||
+          s.name.includes("Tableau_de_Bord") ||
+          s.name.includes("Plan_Financement")
+        );
+
+        let tempSheet: any = null;
+        if (oldBpSheets.length > 0) {
+          if (oldBpSheets.length >= worksheets.items.length) {
+            tempSheet = worksheets.add("AfriExcel_Sync");
+            await context.sync();
+          }
+          for (const s of oldBpSheets) {
+            s.delete();
+          }
+          await context.sync();
+        }
+
+        for (const sheetData of sheetsPayload) {
+          const ws = worksheets.add(sheetData.name);
+          if (sheetData.tab_color) {
+            try { ws.tabColor = sheetData.tab_color; } catch (_) {}
+          }
+
+          // Largeurs de colonnes sécurisées
+          if (sheetData.column_widths) {
+            for (const [col, width] of Object.entries(sheetData.column_widths)) {
+              try {
+                const colPoints = Math.min(Math.max((Number(width) || 12) * 7.5, 90), 380);
+                ws.getRange(`${col}1:${col}2`).format.columnWidth = colPoints;
+              } catch (_) {}
+            }
+          }
+
+          // Injection des cellules (valeurs et formules)
+          if (sheetData.cells && Array.isArray(sheetData.cells)) {
+            for (const cell of sheetData.cells) {
+              try {
+                const cellRange = ws.getCell(cell.r - 1, cell.c - 1);
+                if (cell.f && typeof cell.v === 'string') {
+                  cellRange.formulas = [[cell.v]];
+                } else {
+                  cellRange.values = [[cell.v]];
+                }
+                if (cell.bold) cellRange.format.font.bold = true;
+                if (cell.bg) cellRange.format.fill.color = cell.bg;
+                if (cell.color) cellRange.format.font.color = cell.color;
+                if (cell.num_fmt) cellRange.numberFormat = [[cell.num_fmt]];
+              } catch (_) {}
+            }
+          }
+
+          try {
+            ws.getUsedRange().format.autofitColumns();
+          } catch (_) {}
+        }
+
+        await context.sync();
+
+        if (tempSheet) {
+          try {
+            tempSheet.delete();
+            await context.sync();
+          } catch (_) {}
+        }
+
+        try {
+          const firstSheet = context.workbook.worksheets.getItem("01_Page_de_Garde");
+          firstSheet.activate();
+          await context.sync();
+        } catch (_) {}
+
+        return true;
       });
     } catch (err) {
-      console.error("Erreur lors de l'insertion insertWorksheetsFromBase64:", err);
+      console.error("Erreur lors de insertWorksheetsFromPayload:", err);
       return false;
     }
   }

@@ -78,6 +78,92 @@ class ExcelReportGenerator:
         buffer.seek(0)
         return buffer.getvalue()
 
+    @classmethod
+    def build_with_payload(cls, data: Dict[str, Any], project_name: str, country: str = "Côte d'Ivoire", template_id: str = "auto") -> tuple:
+        wb = openpyxl.Workbook()
+        wb.remove(wb.active)
+
+        currency = data["currency"]
+        profile = data["profile"]
+        m = data
+
+        theme = data.get("theme") or detect_or_get_template(template_id or data.get("template_id"), prompt_text=project_name, activity_text=profile.activity, sector_id=profile.sector_id)
+        cls.current_theme = theme
+        m["theme"] = theme
+
+        # Construction séquentielle des 20 feuilles d'excellence bancable
+        cls._build_01_page_de_garde(wb, project_name, country, currency, m)
+        cls._build_02_presentation_entreprise(wb, project_name, profile, m)
+        cls._build_03_etude_marche(wb, profile, country, currency, m)
+        cls._build_04_strategie_marketing(wb, profile, currency, m)
+        cls._build_05_itineraire_technique(wb, profile, m)
+        cls._build_06_previsions_production(wb, profile, m)
+        cls._build_07_chiffres_affaires(wb, profile, currency, m)
+        cls._build_08_investissements(wb, profile, currency, m)
+        cls._build_09_charges_exploitation(wb, profile, currency, m)
+        cls._build_10_frais_personnel(wb, profile, currency, m)
+        cls._build_11_plan_financement(wb, currency, m)
+        cls._build_12_remboursement_emprunt(wb, currency, m)
+        cls._build_13_bfr(wb, currency, m)
+        cls._build_14_compte_resultat(wb, currency, m)
+        cls._build_15_bilan_previsionnel(wb, currency, m)
+        cls._build_16_plan_tresorerie(wb, currency, m)
+        cls._build_17_seuil_rentabilite(wb, currency, m)
+        cls._build_18_sensibilite(wb, currency, m)
+        cls._build_19_ratios(wb, currency, m)
+        cls._build_20_tableau_de_bord(wb, currency, m)
+
+        # Ajuster les largeurs de colonnes sur TOUTES les feuilles pour garantir zéro '#########'
+        for ws in wb.worksheets:
+            cls._apply_safe_column_widths(ws)
+            # Afficher les quadrillages natifs
+            ws.views.sheetView[0].showGridLines = True
+
+        payload = cls.extract_sheets_payload(wb)
+
+        buffer = io.BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+        return buffer.getvalue(), payload
+
+    @classmethod
+    def extract_sheets_payload(cls, wb: openpyxl.Workbook) -> List[Dict[str, Any]]:
+        payload = []
+        for ws in wb.worksheets:
+            sheet_data = {
+                "name": ws.title,
+                "tab_color": ("#" + ws.sheet_properties.tabColor.rgb[2:]) if (ws.sheet_properties.tabColor and ws.sheet_properties.tabColor.rgb and len(str(ws.sheet_properties.tabColor.rgb)) == 8) else None,
+                "max_row": min(ws.max_row or 1, 60),
+                "max_col": min(ws.max_column or 1, 15),
+                "column_widths": {},
+                "cells": []
+            }
+            for col_idx in range(1, sheet_data["max_col"] + 1):
+                col_letter = get_column_letter(col_idx)
+                if col_letter in ws.column_dimensions and ws.column_dimensions[col_letter].width:
+                    sheet_data["column_widths"][col_letter] = round(ws.column_dimensions[col_letter].width, 1)
+
+            for r in range(1, sheet_data["max_row"] + 1):
+                for c in range(1, sheet_data["max_col"] + 1):
+                    cell = ws.cell(row=r, column=c)
+                    if cell.value is not None:
+                        is_formula = isinstance(cell.value, str) and cell.value.startswith("=")
+                        cell_dict = {
+                            "r": r,
+                            "c": c,
+                            "v": cell.value,
+                            "f": is_formula,
+                            "bold": bool(cell.font and cell.font.bold),
+                            "num_fmt": cell.number_format if cell.number_format and cell.number_format != "General" else None
+                        }
+                        if cell.fill and cell.fill.fgColor and cell.fill.fgColor.rgb and isinstance(cell.fill.fgColor.rgb, str) and len(cell.fill.fgColor.rgb) == 8:
+                            cell_dict["bg"] = "#" + cell.fill.fgColor.rgb[2:]
+                        if cell.font and cell.font.color and cell.font.color.rgb and isinstance(cell.font.color.rgb, str) and len(cell.font.color.rgb) == 8:
+                            cell_dict["color"] = "#" + cell.font.color.rgb[2:]
+                        sheet_data["cells"].append(cell_dict)
+            payload.append(sheet_data)
+        return payload
+
     # =========================================================================
     # FEUILLE 01 : PAGE DE GARDE EXÉCUTIVE & SYNTHÈSE BANCAIRE
     # =========================================================================

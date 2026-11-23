@@ -83,5 +83,6 @@ class PlanResponse(BaseModel):
     sheets_count: int
     filename: str
     file_base64: str
+    sheets_payload: Optional[List[Dict[str, Any]]] = None
     template_id: Optional[str] = None
     template_name: Optional[str] = None

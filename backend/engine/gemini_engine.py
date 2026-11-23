@@ -28,9 +28,8 @@ GROQ_KEYS = [k.strip() for k in _raw_groq.split(",") if k.strip()] if _raw_groq 
 # Gemini 3.6 Flash est le modèle principal exigé par l'utilisateur
 MODELS_CASCADE = [
     "gemini-3.6-flash",
-    "gemini-3.5-flash-lite",
-    "gemini-3-flash-preview",
-    "gemini-3.5-flash"
+    "gemini-2.5-flash",
+    "gemini-2.5-pro"
 ]
 
 # Session HTTP partagée avec pool de connexions persistant

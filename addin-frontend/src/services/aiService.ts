@@ -417,6 +417,7 @@ ${userPrompt}`;
                 currencySymbol: pyPlan.currency,
                 filename: pyPlan.filename,
                 file_base64: pyPlan.file_base64,
+                sheets_payload: pyPlan.sheets_payload,
                 kpis: pyPlan.kpis
               } as any
             ],
